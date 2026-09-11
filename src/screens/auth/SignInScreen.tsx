@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Image, StyleSheet, SafeAreaView, Alert } from "react-native";
 import { Phone, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
@@ -9,8 +9,9 @@ import * as mockAuthService from "@services/mocks/authService";
 
 const authService = mockAuthService;
 
-// NOTE: functional but not yet visually matched to Figma's SIGN IN frame -
-// next pass covers Sign In + Forgot Password + Reset Password together.
+// NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days) -
+// see README "Known issues".
+const WORDMARK = "https://www.figma.com/api/mcp/asset/45f68554-0092-45a1-89ec-48881b40850f.png";
 
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
@@ -45,6 +46,7 @@ export function SignInScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Image source={{ uri: WORDMARK }} style={styles.wordmark} resizeMode="contain" />
       <Text style={styles.title}>Welcome back!</Text>
       <Text style={styles.subtitle}>Let&apos;s get you back to Makola.</Text>
 
@@ -65,8 +67,8 @@ export function SignInScreen({ navigation }: any) {
           onChangeText={setPassword}
           icon={<Lock size={20} color={colors.textMuted} />}
         />
-        <Text style={styles.forgot} onPress={() => Alert.alert("Coming soon", "Forgot password flow is being built next.")}>
-          Forgotten password?
+        <Text style={styles.forgot} onPress={() => navigation.navigate("ForgotPassword")}>
+          Forgot password?
         </Text>
       </View>
 
@@ -84,9 +86,10 @@ export function SignInScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 24, paddingTop: 100 },
-  title: { fontSize: 28, fontFamily: fonts.headline, color: colors.primary },
-  subtitle: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text, marginTop: 4 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 24, paddingTop: 60 },
+  wordmark: { width: 80, height: 95, alignSelf: "center", marginBottom: 16, transform: [{ rotate: "13.31deg" }] },
+  title: { fontSize: 28, fontFamily: fonts.headline, color: colors.primary, textAlign: "center" },
+  subtitle: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text, marginTop: 4, textAlign: "center" },
   form: { gap: 20, marginTop: 32 },
   forgot: { textAlign: "right", color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 13 },
   footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16, gap: 16 },

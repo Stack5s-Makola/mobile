@@ -7,6 +7,8 @@ import { RoleSelectionScreen } from "@screens/auth/RoleSelectionScreen";
 import { BuyerProfileSetupScreen } from "@screens/auth/BuyerProfileSetupScreen";
 import { SellerProfileSetupScreen } from "@screens/auth/SellerProfileSetupScreen";
 import { SignInScreen } from "@screens/auth/SignInScreen";
+import { ForgotPasswordScreen } from "@screens/auth/ForgotPasswordScreen";
+import { CreateNewPasswordScreen } from "@screens/auth/CreateNewPasswordScreen";
 
 // Flow: Onboarding -> Register -> OtpVerify -> RoleSelection ->
 // BuyerProfileSetup | SellerProfileSetup -> (login, RootNavigator takes over)
@@ -20,6 +22,8 @@ export function AuthNavigator() {
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="SignIn" component={SignInScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="CreateNewPassword" component={CreateNewPasswordScreen} />
       <Stack.Screen name="OtpVerify" component={OtpVerifyScreen} />
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="BuyerProfileSetup" component={BuyerProfileSetupScreen} />

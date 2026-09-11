@@ -17,7 +17,11 @@ const authService = mockAuthService;
 const CODE_LENGTH = 6;
 
 export function OtpVerifyScreen({ navigation, route }: any) {
-  const { userId, phone } = route.params as { userId: string; phone: string };
+  const { userId, phone, purpose = "register" } = route.params as {
+    userId: string;
+    phone: string;
+    purpose?: "register" | "resetPassword";
+  };
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [isLoading, setIsLoading] = useState(false);
   const inputs = useRef<Array<TextInput | null>>([]);
@@ -45,7 +49,11 @@ export function OtpVerifyScreen({ navigation, route }: any) {
     try {
       const res = await authService.verifyOtp({ userId, code });
       if (res.success) {
-        navigation.navigate("RoleSelection", { userId });
+        if (purpose === "resetPassword") {
+          navigation.navigate("CreateNewPassword", { userId });
+        } else {
+          navigation.navigate("RoleSelection", { userId });
+        }
       } else {
         Alert.alert("Verification failed", res.message);
       }
