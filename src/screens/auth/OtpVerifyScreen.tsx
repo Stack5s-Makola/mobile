@@ -1,75 +1,109 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, Alert } from "react-native";
-import { useRoute, RouteProp } from "@react-navigation/native";
-import { AppTextInput } from "@components/AppTextInput";
+import React, { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+} from "react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { PrimaryButton } from "@components/PrimaryButton";
-import { AuthStackParamList } from "@navigation/AuthNavigator";
-import { useAuth } from "@context/AuthContext";
+import { colors, fonts } from "@constants/theme";
 import * as mockAuthService from "@services/mocks/authService";
 
 const authService = mockAuthService;
+const CODE_LENGTH = 6;
 
-type Route = RouteProp<AuthStackParamList, "OtpVerify">;
+export function OtpVerifyScreen({ navigation, route }: any) {
+  const { userId, phone } = route.params as { userId: string; phone: string };
+  const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
+  const [isLoading, setIsLoading] = useState(false);
+  const inputs = useRef<Array<TextInput | null>>([]);
 
-export function OtpVerifyScreen() {
-  const { params } = useRoute<Route>();
-  const { login } = useAuth();
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const code = digits.join("");
+  const canSubmit = code.length === CODE_LENGTH;
 
-  async function handleSubmit() {
-    if (code.trim().length < 4) {
-      Alert.alert("Enter the code", "Please enter the code we sent you.");
-      return;
+  function handleChange(text: string, index: number) {
+    const next = [...digits];
+    next[index] = text.slice(-1);
+    setDigits(next);
+    if (text && index < CODE_LENGTH - 1) {
+      inputs.current[index + 1]?.focus();
     }
+  }
 
-    setLoading(true);
+  function handleKeyPress(e: any, index: number) {
+    if (e.nativeEvent.key === "Backspace" && !digits[index] && index > 0) {
+      inputs.current[index - 1]?.focus();
+    }
+  }
+
+  async function handleVerify() {
+    setIsLoading(true);
     try {
-      const res = await authService.verifyOtp({ userId: params.userId, code: code.trim() });
-      if (!res.success) {
+      const res = await authService.verifyOtp({ userId, code });
+      if (res.success) {
+        navigation.navigate("RoleSelection", { userId });
+      } else {
         Alert.alert("Verification failed", res.message);
-        return;
       }
-      // Once session is set, RootNavigator picks up from here:
-      // role is null -> RoleSelectionScreen shows automatically.
-      await login(res.data.accessToken, {
-        id: res.data.userId,
-        fullName: res.data.fullName,
-        phone: res.data.phone,
-        role: res.data.role,
-      });
-    } catch (err) {
-      Alert.alert("Something went wrong", "Please check your connection and try again.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Verify your number</Text>
-        <Text style={styles.subtitle}>Enter the code we sent to {params.phone}.</Text>
+      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+        <ArrowLeft size={28} color={colors.text} />
+      </Pressable>
+      <Text style={styles.title}>Verify your number</Text>
+      <Text style={styles.subtitle}>We&apos;ve sent a 6-digit code to {phone}.</Text>
 
-        <AppTextInput
-          placeholder="6-digit code"
-          value={code}
-          onChangeText={setCode}
-          keyboardType="number-pad"
-          maxLength={6}
-          style={styles.input}
-        />
+      <View style={styles.codeRow}>
+        {digits.map((digit, i) => (
+          <TextInput
+            key={i}
+            ref={(ref) => (inputs.current[i] = ref)}
+            style={styles.codeBox}
+            value={digit}
+            onChangeText={(text) => handleChange(text, i)}
+            onKeyPress={(e) => handleKeyPress(e, i)}
+            keyboardType="number-pad"
+            maxLength={1}
+            textAlign="center"
+          />
+        ))}
       </View>
 
-      <PrimaryButton label="Verify" onPress={handleSubmit} loading={loading} />
+      <View style={styles.footer}>
+        <PrimaryButton
+          label="Verify OTP"
+          onPress={handleVerify}
+          disabled={!canSubmit}
+          loading={isLoading}
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: "space-between" },
-  content: { flex: 1, justifyContent: "center" },
-  title: { fontSize: 26, fontWeight: "700", marginBottom: 8 },
-  subtitle: { fontSize: 15, color: "#555", marginBottom: 24 },
-  input: { marginBottom: 14 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 24, paddingTop: 40 },
+  back: { marginBottom: 24 },
+  title: { fontSize: 24, fontFamily: fonts.headline, color: colors.primary },
+  subtitle: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted, marginTop: 8 },
+  codeRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 32 },
+  codeBox: {
+    width: 50,
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#686868",
+    borderRadius: 10,
+    fontSize: 20,
+    color: colors.text,
+  },
+  footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16 },
 });
