@@ -25,7 +25,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Makola uses your photos to let you set a profile picture."
+          "photosPermission": "Makola uses your photos to let you set a profile picture, add listing photos, and upload verification documents.",
+          "cameraPermission": "Makola uses your camera to take listing photos and verification selfies."
         }
       ]
     ]

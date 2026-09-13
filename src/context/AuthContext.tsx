@@ -1,13 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import * as SecureStore from "expo-secure-store";
 import { User, UserRole } from "@types/user";
-
-const SESSION_KEY = "makola_session";
-
-type Session = {
-  accessToken: string;
-  user: User;
-};
+import { SESSION_KEY, Session } from "@services/session";
 
 type AuthContextValue = {
   session: Session | null;

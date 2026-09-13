@@ -8,6 +8,13 @@ export const colors = {
   textMuted: "#777777",
   white: "#FFFFFF",
   border: "#01573C",
+  divider: "#DDE3E1",
+  primarySoft: "#DCEBE5", // tinted fills behind primary icons/badges
+  warning: "#B7791F",
+  warningSoft: "#FDF3E1",
+  danger: "#C0392B",
+  dangerSoft: "#FBE9E7",
+  neutralSoft: "#EEF1F0",
 };
 
 export const fonts = {
