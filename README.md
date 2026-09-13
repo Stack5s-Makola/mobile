@@ -12,12 +12,13 @@ mobile/
 │   │   ├── RootNavigator.tsx     # Switches between Auth/Buyer/Seller (Step 4)
 │   │   ├── AuthNavigator.tsx     # Register → OTP → Role select (Step 3)
 │   │   ├── BuyerNavigator.tsx    # Buyer tab bar
-│   │   └── SellerNavigator.tsx   # Seller tab bar — Daniel's territory
+│   │   ├── SellerNavigator.tsx   # Seller tab bar — Daniel's territory
+│   │   └── sellerRoutes.ts       # Seller route/param types
 │   ├── screens/
 │   │   ├── onboarding/
 │   │   ├── auth/
 │   │   ├── buyer/
-│   │   └── seller/
+│   │   └── seller/               # See src/screens/seller/README.md
 │   ├── components/               # Shared, presentational, prop-driven
 │   ├── services/
 │   │   ├── api/                  # Real backend calls (NestJS on Render)
