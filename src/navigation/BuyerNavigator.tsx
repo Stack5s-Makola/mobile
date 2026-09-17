@@ -4,8 +4,9 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { BuyerStackParamList, BuyerTabParamList } from "@navigation/buyerRoutes";
 import { BuyerTabBar } from "@components/BuyerTabBar";
 import { BuyerHomeScreen } from "@screens/buyer/BuyerHomeScreen";
+import { SearchTab } from "@screens/buyer/tabs/SearchTab";
+import { SavedTab } from "@screens/buyer/tabs/SavedTab";
 import { BuyerProfileTab } from "@screens/buyer/tabs/BuyerProfileTab";
-import { ComingSoonTab } from "@screens/buyer/tabs/ComingSoonTab";
 import { ProductDetailsScreen } from "@screens/buyer/ProductDetailsScreen";
 import { CategoriesScreen } from "@screens/buyer/CategoriesScreen";
 
@@ -22,8 +23,8 @@ function BuyerTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={(props) => <BuyerTabBar {...props} />}>
       <Tab.Screen name="Home" component={BuyerHomeScreen} />
-      <Tab.Screen name="Search">{() => <ComingSoonTab label="Search" />}</Tab.Screen>
-      <Tab.Screen name="Saved">{() => <ComingSoonTab label="Saved" />}</Tab.Screen>
+      <Tab.Screen name="Search" component={SearchTab} />
+      <Tab.Screen name="Saved" component={SavedTab} />
       <Tab.Screen name="Profile" component={BuyerProfileTab} />
     </Tab.Navigator>
   );

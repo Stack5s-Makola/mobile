@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,25 +10,26 @@ import {
   Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Heart, MapPin, ShieldCheck, Phone } from "lucide-react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { ArrowLeft, Heart, MapPin, ShieldCheck, Phone, BookmarkPlus, BookmarkCheck } from "lucide-react-native";
 import { StatusBadge } from "@components/StatusBadge";
-import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts, radii } from "@constants/theme";
 import { Listing } from "@types/listing";
 import { getCategoryLabel } from "@constants/categories";
 import { listingService } from "@services/listingService";
+import { savedService } from "@services/savedService";
 import { BuyerStackProps } from "@navigation/buyerRoutes";
 
 // NOTE: built against our existing data model/theme, not yet verified
 // pixel-for-pixel against Figma's "product details" frame - the Figma MCP
 // connector hit its rate limit mid-build. Refine once that resets.
-// "Save" is local-only state for now, pending the real Saved feature.
 
 export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"ProductDetails">) {
   const { listingId } = route.params;
   const [listing, setListing] = useState<Listing | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isProductSaved, setIsProductSaved] = useState(false);
+  const [isSellerSaved, setIsSellerSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +42,42 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
     };
   }, [listingId]);
 
-  function handleContactSeller() {
+  // Re-check saved state whenever this screen regains focus, since it can
+  // change from other screens (e.g. un-saving from the Saved tab).
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      savedService.getSavedProductIds().then((res) => {
+        if (!cancelled && res.success) setIsProductSaved(res.data.includes(listingId));
+      });
+      if (listing) {
+        savedService.getSavedSellers().then((res) => {
+          if (!cancelled && res.success) {
+            setIsSellerSaved(res.data.some((s) => s.phone === listing.sellerPhone));
+          }
+        });
+      }
+      return () => {
+        cancelled = true;
+      };
+    }, [listingId, listing])
+  );
+
+  async function handleToggleSaveProduct() {
+    const res = await savedService.toggleSavedProduct(listingId);
+    if (res.success) setIsProductSaved(res.data.saved);
+  }
+
+  async function handleToggleSaveSeller() {
+    if (!listing) return;
+    const res = await savedService.toggleSavedSeller({
+      name: listing.sellerName,
+      phone: listing.sellerPhone,
+    });
+    if (res.success) setIsSellerSaved(res.data.saved);
+  }
+
+  function handleCall() {
     if (listing) Linking.openURL(`tel:${listing.sellerPhone}`);
   }
 
@@ -69,8 +105,8 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
           <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
-          <Pressable style={styles.saveButton} onPress={() => setIsSaved(!isSaved)}>
-            <Heart size={20} color={colors.primary} fill={isSaved ? colors.primary : "transparent"} />
+          <Pressable style={styles.saveButton} onPress={handleToggleSaveProduct}>
+            <Heart size={20} color={colors.primary} fill={isProductSaved ? colors.primary : "transparent"} />
           </Pressable>
         </View>
 
@@ -97,6 +133,13 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
                 </View>
               ) : null}
             </View>
+            <Pressable style={styles.saveContactButton} onPress={handleToggleSaveSeller}>
+              {isSellerSaved ? (
+                <BookmarkCheck size={20} color={colors.primary} />
+              ) : (
+                <BookmarkPlus size={20} color={colors.primary} />
+              )}
+            </Pressable>
           </View>
 
           {listing.description ? (
@@ -109,7 +152,7 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.contactButton} onPress={handleContactSeller}>
+        <Pressable style={styles.contactButton} onPress={handleCall}>
           <Phone size={18} color={colors.white} />
           <Text style={styles.contactLabel}>Contact Seller</Text>
         </Pressable>
@@ -174,6 +217,7 @@ const styles = StyleSheet.create({
   sellerInitial: { fontSize: 18, fontFamily: fonts.headline, color: colors.primary },
   sellerName: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
   verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  saveContactButton: { padding: 6 },
   descriptionBlock: { marginTop: 20 },
   sectionHeader: { fontSize: 15, fontFamily: fonts.headline, color: colors.primary, marginBottom: 6 },
   description: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text, lineHeight: 20 },
