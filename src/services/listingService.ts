@@ -1,7 +1,7 @@
-import * as mockListingService from "@services/mocks/listingService";
+import * as apiListingService from "@services/api/listingService";
 
-// Every buyer screen reads through this one switch instead of importing a
-// mock directly. Once the listings endpoint is live, change this import to
-// "@services/api/listingService" - same names/signatures, nothing else
-// needs to change. (Pattern adopted from Daniel's sellerService.ts.)
-export const listingService = mockListingService;
+// Listings are live on the real backend (confirmed by backend dev,
+// served under /api/products). Swapped from mocks/listingService here.
+// If this starts erroring, the mock is still available as a fallback:
+// import * as mockListingService from "@services/mocks/listingService";
+export const listingService = apiListingService;

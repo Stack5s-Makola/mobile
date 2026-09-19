@@ -61,6 +61,11 @@ export function BuyerHomeScreen({ navigation }: any) {
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={() => loadListings(true)} />
         }
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {activeCategory ? "No listings in this category yet." : "No listings yet - check back soon."}
+          </Text>
+        }
         renderItem={({ item }) => (
           <ProductCard
             listing={item}
@@ -161,4 +166,11 @@ const styles = StyleSheet.create({
   sectionHeader: { fontSize: 16, fontFamily: fonts.headline, color: colors.primary, marginBottom: 10 },
   viewAll: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.textMuted },
   chipRow: { marginBottom: 20 },
+  empty: {
+    textAlign: "center",
+    marginTop: 40,
+    fontSize: 14,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
 });
