@@ -4,5 +4,9 @@ export interface Listing {
   price: number;
   mainImage: string;
   sellerName: string;
-  category: string;
+  sellerPhone: string;
+  sellerVerified: boolean;
+  category: string; // category id - see src/constants/categories.ts
+  location: string; // city/area, e.g. "Madina"
+  description?: string;
 }

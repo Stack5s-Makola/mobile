@@ -1,14 +1,15 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { colors, fonts } from "@constants/theme";
-import { StatusTone } from "@constants/sellerStatus";
+
+type Tone = "success" | "warning" | "danger" | "neutral";
 
 type Props = {
   label: string;
-  tone: StatusTone;
+  tone: Tone;
 };
 
-const TONES: Record<StatusTone, { bg: string; fg: string }> = {
+const TONE_COLORS: Record<Tone, { bg: string; fg: string }> = {
   success: { bg: colors.primarySoft, fg: colors.primary },
   warning: { bg: colors.warningSoft, fg: colors.warning },
   danger: { bg: colors.dangerSoft, fg: colors.danger },
@@ -16,7 +17,7 @@ const TONES: Record<StatusTone, { bg: string; fg: string }> = {
 };
 
 export function StatusBadge({ label, tone }: Props) {
-  const { bg, fg } = TONES[tone];
+  const { bg, fg } = TONE_COLORS[tone];
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
       <Text style={[styles.label, { color: fg }]}>{label}</Text>
@@ -25,6 +26,6 @@ export function StatusBadge({ label, tone }: Props) {
 }
 
 const styles = StyleSheet.create({
-  badge: { alignSelf: "flex-start", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  label: { fontSize: 11, fontFamily: fonts.bodySemiBold },
+  badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, alignSelf: "flex-start" },
+  label: { fontSize: 11, fontFamily: fonts.bodyMedium },
 });
