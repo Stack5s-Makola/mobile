@@ -20,7 +20,7 @@ export interface VerifyOtpResult {
   userId: string;
   phone: string;
   email: string;
-  verified: boolean;
+  verified: true;
 }
 
 export interface SelectRolePayload {
@@ -42,8 +42,27 @@ export interface SellerProfilePayload {
   photoUri?: string;
 }
 
-// Returned once an account is fully set up (profile complete or login) -
-// everything AuthContext.login() needs to build a session.
+// TODO: field names below are our best guess pending Daniel confirming
+// the exact request body for POST /api/register/set-seller-profile.
+// Likely correct given what the screen collects, but not verified.
+export interface RegisterSellerPayload {
+  phone: string;
+  email: string;
+  password: string;
+  fullName: string;
+  businessName: string;
+  location: string;
+  photoUri?: string;
+}
+
+// TODO: response shape is a guess - specifically need to confirm what
+// identifier the follow-up OTP-verify call should use (userId? phone?
+// something else the backend returns).
+export interface RegisterSellerResult {
+  userId: string;
+  phone: string;
+}
+
 export interface AuthSessionResult {
   accessToken: string;
   refreshToken: string;

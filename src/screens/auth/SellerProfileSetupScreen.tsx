@@ -5,14 +5,21 @@ import * as ImagePicker from "expo-image-picker";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
-import { useAuth } from "@context/AuthContext";
-import * as mockAuthService from "@services/mocks/authService";
+import * as apiAuthService from "@services/api/authService";
 
-const authService = mockAuthService;
+// This screen calls the REAL backend directly (not the authService
+// swap-point) because only THIS endpoint is confirmed live by Daniel -
+// login/verify-otp/etc. aren't necessarily ready, so flipping the whole
+// swap-point would break those. Revisit once more of Priority 2 lands.
+//
+// CONFIRMED: POST /api/register/set-seller-profile creates the account
+// and triggers the OTP email in one call (Daniel).
+// UNCONFIRMED (best guess, flagged in src/types/auth.ts): exact request
+// body field names, and the response shape / what identifier to carry
+// into OtpVerifyScreen.
 
 export function SellerProfileSetupScreen({ navigation, route }: any) {
-  const { userId } = route.params as { userId: string };
-  const { login } = useAuth();
+  const { phone, email, password } = route.params as { phone: string; email: string; password: string };
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [location, setLocation] = useState("");
@@ -41,27 +48,26 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
   async function handleContinue() {
     setIsLoading(true);
     try {
-      const res = await authService.completeSellerProfile({
-        userId,
+      const res = await apiAuthService.registerSeller({
+        phone,
+        email,
+        password,
         fullName,
         businessName,
         location,
         photoUri,
       });
       if (res.success) {
-        await login(res.data.accessToken, {
-          id: res.data.userId,
+        navigation.navigate("OtpVerify", {
+          userId: res.data.userId,
           phone: res.data.phone,
-          email: res.data.email,
-          role: res.data.role,
-          fullName: res.data.fullName,
-          location: res.data.location,
-          businessName: res.data.businessName,
-          photoUri: res.data.photoUri,
+          purpose: "sellerRegister",
         });
       } else {
-        Alert.alert("Couldn't complete profile", res.message);
+        Alert.alert("Couldn't create account", res.message);
       }
+    } catch {
+      Alert.alert("Couldn't create account", "Check your connection and try again.");
     } finally {
       setIsLoading(false);
     }

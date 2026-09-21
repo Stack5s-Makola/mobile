@@ -13,6 +13,7 @@ import {
   ResetPasswordPayload,
 } from "@types/auth";
 import { UserRole } from "@types/user";
+import { RegisterSellerPayload, RegisterSellerResult } from "@types/auth";
 
 function delay<T>(value: T, ms = 600): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
@@ -152,6 +153,33 @@ export async function completeSellerProfile(
       businessName: user.businessName,
       photoUri: user.photoUri,
     },
+  });
+}
+
+// Mock counterpart to the combined POST /api/register/set-seller-profile.
+// Creates the account AND marks it role=SELLER with profile fields all at
+// once, matching the real endpoint's one-shot behavior.
+export async function registerSeller(
+  payload: RegisterSellerPayload
+): Promise<ApiResponse<RegisterSellerResult>> {
+  const id = `mock-${nextId++}`;
+  usersByPhone.set(payload.phone, {
+    id,
+    phone: payload.phone,
+    email: payload.email,
+    password: payload.password,
+    verified: false,
+    role: "SELLER",
+    fullName: payload.fullName,
+    businessName: payload.businessName,
+    location: payload.location,
+    photoUri: payload.photoUri,
+  });
+  console.log(`[mock authService] OTP for ${payload.phone}: ${MOCK_OTP}`);
+  return delay({
+    success: true,
+    message: "Account created",
+    data: { userId: id, phone: payload.phone },
   });
 }
 

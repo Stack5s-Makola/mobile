@@ -4,42 +4,32 @@ import { Mail, Phone, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
-import * as mockAuthService from "@services/mocks/authService";
-
-// Swap the import above for @services/api/authService once Promise's
-// /api/auth/register endpoint is live - same function signature.
-const authService = mockAuthService;
 
 // NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days
 // from when it was pulled). Replace with a real exported asset in
 // src/assets once available - see README "Known issues" for context.
 const WORDMARK_URL = "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a8-253f0baf48d0.png";
 
+// No backend call here anymore. Per Daniel: nothing is created until the
+// final combined submission on the role-specific profile-setup screen
+// (e.g. POST /api/register/set-seller-profile), which creates the account
+// AND triggers the OTP email in one call. This screen just collects and
+// forwards the data via navigation params.
+
 export function RegisterScreen({ navigation }: any) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   const canSubmit = phone.length > 0 && email.length > 0 && password.length >= 6 && password === confirmPassword;
 
-  async function handleCreateAccount() {
+  function handleContinue() {
     if (password !== confirmPassword) {
       Alert.alert("Passwords don't match", "Please re-enter your password.");
       return;
     }
-    setIsLoading(true);
-    try {
-      const res = await authService.register({ phone, email, password });
-      if (res.success) {
-        navigation.navigate("OtpVerify", { userId: res.data.userId, phone: res.data.phone });
-      } else {
-        Alert.alert("Couldn't create account", res.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    navigation.navigate("RoleSelection", { phone, email, password });
   }
 
   return (
@@ -86,12 +76,7 @@ export function RegisterScreen({ navigation }: any) {
         />
       </View>
 
-      <PrimaryButton
-        label="Create Account"
-        onPress={handleCreateAccount}
-        disabled={!canSubmit}
-        loading={isLoading}
-      />
+      <PrimaryButton label="Continue" onPress={handleContinue} disabled={!canSubmit} />
 
       <Text style={styles.footer}>
         Already have an account?{" "}
