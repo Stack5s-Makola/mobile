@@ -4,6 +4,7 @@ import { Mail, Phone, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { UserRole } from "@types/user";
 
 // NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days
 // from when it was pulled). Replace with a real exported asset in
@@ -15,8 +16,12 @@ const WORDMARK_URL = "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a
 // (e.g. POST /api/register/set-seller-profile), which creates the account
 // AND triggers the OTP email in one call. This screen just collects and
 // forwards the data via navigation params.
+//
+// The role is chosen before this screen (RoleSelection) and rides through
+// here to the matching profile-setup screen.
 
-export function RegisterScreen({ navigation }: any) {
+export function RegisterScreen({ navigation, route }: any) {
+  const role: UserRole = route?.params?.role ?? "BUYER";
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +34,12 @@ export function RegisterScreen({ navigation }: any) {
       Alert.alert("Passwords don't match", "Please re-enter your password.");
       return;
     }
-    navigation.navigate("RoleSelection", { phone, email, password });
+    navigation.navigate(role === "SELLER" ? "SellerProfileSetup" : "BuyerProfileSetup", {
+      phone,
+      email,
+      password,
+      role,
+    });
   }
 
   return (
@@ -37,7 +47,11 @@ export function RegisterScreen({ navigation }: any) {
       <View style={styles.header}>
         <Image source={{ uri: WORDMARK_URL }} style={styles.wordmark} resizeMode="contain" />
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join Makola and start discovering or selling today.</Text>
+        <Text style={styles.subtitle}>
+          {role === "SELLER"
+            ? "Set up your seller account and start listing today."
+            : "Join Makola and start discovering today."}
+        </Text>
       </View>
 
       <View style={styles.form}>
@@ -93,7 +107,13 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: 24 },
   wordmark: { width: 70, height: 84, marginBottom: 8 },
   title: { fontSize: 28, fontFamily: fonts.headline, color: colors.primary },
-  subtitle: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text, marginTop: 4 },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+    marginTop: 4,
+    textAlign: "center",
+  },
   form: { gap: 20, marginBottom: 24 },
   footer: {
     textAlign: "center",

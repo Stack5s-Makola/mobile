@@ -11,21 +11,19 @@ const BUYER_ILLUSTRATION =
 const SELLER_ILLUSTRATION =
   "https://www.figma.com/api/mcp/asset/3a72b22c-92e7-425d-a741-5dcafee7bc4b.png";
 
-// No backend call here - just forwarding the accumulated phone/email/
-// password along with the chosen role. The actual account gets created
-// on the role-specific profile-setup screen, in one combined submission.
+// First step after "Get started": the role is chosen before any details
+// are typed, so the sign-up form can be framed for buyers or sellers.
+//
+// No backend call here - the role is just carried forward in nav params.
+// The account is still created in one combined submission on the
+// role-specific profile-setup screen.
 
-export function RoleSelectionScreen({ navigation, route }: any) {
-  const { phone, email, password } = route.params as { phone: string; email: string; password: string };
+export function RoleSelectionScreen({ navigation }: any) {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   function handleContinue() {
     if (!selectedRole) return;
-    navigation.navigate(selectedRole === "BUYER" ? "BuyerProfileSetup" : "SellerProfileSetup", {
-      phone,
-      email,
-      password,
-    });
+    navigation.navigate("Register", { role: selectedRole });
   }
 
   return (

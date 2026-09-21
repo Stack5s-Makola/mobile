@@ -76,7 +76,7 @@ export function SignInScreen({ navigation }: any) {
         <PrimaryButton label="Sign In" onPress={handleSignIn} disabled={!canSubmit} loading={isLoading} />
         <Text style={styles.footerText}>
           Don&apos;t have an account?{" "}
-          <Text style={styles.link} onPress={() => navigation.navigate("Register")}>
+          <Text style={styles.link} onPress={() => navigation.navigate("RoleSelection")}>
             Sign Up
           </Text>
         </Text>
