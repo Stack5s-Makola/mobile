@@ -1,12 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet, SafeAreaView } from "react-native";
 import { CheckCircle2, Circle } from "lucide-react-native";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts, radii } from "@constants/theme";
 import { UserRole } from "@types/user";
-import * as mockAuthService from "@services/mocks/authService";
-
-const authService = mockAuthService;
 
 // Sourced from Figma's temporary asset CDN (~7 day expiry) - see README.
 const BUYER_ILLUSTRATION =
@@ -14,27 +11,21 @@ const BUYER_ILLUSTRATION =
 const SELLER_ILLUSTRATION =
   "https://www.figma.com/api/mcp/asset/3a72b22c-92e7-425d-a741-5dcafee7bc4b.png";
 
-export function RoleSelectionScreen({ navigation, route }: any) {
-  const { userId } = route.params as { userId: string };
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+// No backend call here - just forwarding the accumulated phone/email/
+// password along with the chosen role. The actual account gets created
+// on the role-specific profile-setup screen, in one combined submission.
 
-  async function handleContinue() {
+export function RoleSelectionScreen({ navigation, route }: any) {
+  const { phone, email, password } = route.params as { phone: string; email: string; password: string };
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  function handleContinue() {
     if (!selectedRole) return;
-    setIsLoading(true);
-    try {
-      const res = await authService.selectRole({ userId, role: selectedRole });
-      if (res.success) {
-        navigation.navigate(
-          selectedRole === "BUYER" ? "BuyerProfileSetup" : "SellerProfileSetup",
-          { userId }
-        );
-      } else {
-        Alert.alert("Couldn't save role", "Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    navigation.navigate(selectedRole === "BUYER" ? "BuyerProfileSetup" : "SellerProfileSetup", {
+      phone,
+      email,
+      password,
+    });
   }
 
   return (
@@ -57,12 +48,7 @@ export function RoleSelectionScreen({ navigation, route }: any) {
       />
 
       <View style={styles.footer}>
-        <PrimaryButton
-          label="Continue"
-          onPress={handleContinue}
-          disabled={!selectedRole}
-          loading={isLoading}
-        />
+        <PrimaryButton label="Continue" onPress={handleContinue} disabled={!selectedRole} />
       </View>
     </SafeAreaView>
   );

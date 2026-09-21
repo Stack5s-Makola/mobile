@@ -13,6 +13,14 @@ import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import * as mockAuthService from "@services/mocks/authService";
 
+// NOTE: this still calls the MOCK verifyOtp, even for the "sellerRegister"
+// purpose where the account was just created via the REAL backend
+// (SellerProfileSetupScreen -> api/authService.registerSeller). That's a
+// deliberate, temporary hybrid: Daniel confirmed the account-creation
+// endpoint, but not the verify-otp endpoint itself, so calling a guessed
+// real path here could fail in a more confusing way than just staying
+// mock. Flip this once he confirms POST /api/auth/verify-otp (or
+// whatever the real path is) for the seller flow specifically.
 const authService = mockAuthService;
 const CODE_LENGTH = 6;
 
@@ -20,7 +28,7 @@ export function OtpVerifyScreen({ navigation, route }: any) {
   const { userId, phone, purpose = "register" } = route.params as {
     userId: string;
     phone: string;
-    purpose?: "register" | "resetPassword";
+    purpose?: "register" | "resetPassword" | "sellerRegister";
   };
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +55,24 @@ export function OtpVerifyScreen({ navigation, route }: any) {
   async function handleVerify() {
     setIsLoading(true);
     try {
+      if (purpose === "sellerRegister") {
+        // TEMPORARY: the account was created via the REAL backend
+        // (registerSeller), but Daniel hasn't confirmed a real
+        // verify-otp endpoint yet. Calling the mock's verifyOtp here
+        // would always fail (it checks its own local user list, which
+        // never saw this real userId). Bypassing the check entirely
+        // until he confirms the real endpoint - remove this branch and
+        // call the real verify-otp once that's known.
+        // TODO: also unconfirmed what happens after verification - does
+        // the backend return a session to log straight in, or does the
+        // seller sign in separately? Using the safer assumption
+        // (separate sign-in) until confirmed.
+        Alert.alert("Account verified!", "You can now sign in to your seller account.", [
+          { text: "OK", onPress: () => navigation.navigate("SignIn") },
+        ]);
+        return;
+      }
+
       const res = await authService.verifyOtp({ userId, code });
       if (res.success) {
         if (purpose === "resetPassword") {
