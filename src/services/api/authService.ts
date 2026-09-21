@@ -81,33 +81,50 @@ import { RegisterSellerPayload, RegisterSellerResult } from "@types/auth";
 // }
 
 
+// POST /api/register/set-seller-profile - creates the account AND emails a
+// 6-digit code, in one call. Contract confirmed by probing the live backend:
+//
+//   wire field   <- our field        notes
+//   email        <- email
+//   phone        <- phone            9-15 digits, optional leading +
+//   password     <- password         min 8 characters
+//   name         <- fullName         max 120 chars
+//   shopName     <- businessName     max 120 chars, must be globally unique
+//   location     <- location         object of { latitude, longitude }
+//   role         <- (constant)       "SELLER"
+//
+// Returns { saved: true } and nothing else - no userId - so the OTP step has
+// to identify the account by email.
+//
+// 409s to expect, message only (no `errors` map):
+//   "An account with that phone number already exists"
+//   "An account with this email already exists"
+//   "That shop name is already taken"
+//
+// NOTE: photoUri is absent from the contract. The endpoint accepts the
+// request without it and ignores it if sent, so the seller's photo is not
+// uploaded yet.
+export function registerSeller(
+  payload: RegisterSellerPayload
+): Promise<ApiResponse<RegisterSellerResult>> {
+  return apiRequest("/api/register/set-seller-profile", {
+    method: "POST",
+    body: JSON.stringify({
+      email: payload.email.trim(),
+      phone: payload.phone.trim(),
+      password: payload.password,
+      name: payload.fullName.trim(),
+      shopName: payload.businessName.trim(),
+      location: payload.location,
+      role: "SELLER",
+    }),
+  });
+}
 
-
-export const sendData = async (payload: any) => {
-  try {
-    const response = await fetch(
-      "https://makola-backend-r9wy.onrender.com/api/register/seller",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data?.message || `Request failed with status ${response.status}`
-      );
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error sending data to backend:", error);
-    throw error;
-  }
-};
+// POST /api/otp - (re)sends a verification code to an email address.
+export function sendOtp(email: string): Promise<ApiResponse<unknown>> {
+  return apiRequest("/api/otp", {
+    method: "POST",
+    body: JSON.stringify({ email: email.trim() }),
+  });
+}

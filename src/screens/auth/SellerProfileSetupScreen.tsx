@@ -8,15 +8,21 @@ import { colors, fonts } from "@constants/theme";
 import * as apiAuthService from "@services/api/authService";
 
 // This screen calls the REAL backend directly (not the authService
-// swap-point) because only THIS endpoint is confirmed live by Daniel -
-// login/verify-otp/etc. aren't necessarily ready, so flipping the whole
-// swap-point would break those. Revisit once more of Priority 2 lands.
+// swap-point) because only THIS endpoint is confirmed live -
+// login/verify-otp/etc. are still 404, so flipping the whole swap-point
+// would break those.
 //
-// CONFIRMED: POST /api/register/set-seller-profile creates the account
-// and triggers the OTP email in one call (Daniel).
-// UNCONFIRMED (best guess, flagged in src/types/auth.ts): exact request
-// body field names, and the response shape / what identifier to carry
-// into OtpVerifyScreen.
+// VERIFIED against the live backend: POST /api/register/set-seller-profile
+// creates the account and emails the OTP in one call, and returns only
+// { saved: true } - no userId - so the OTP screen is handed the email and
+// phone we already collected here.
+//
+// TODO(location): the backend requires GPS coordinates and rejects a plain
+// string. Until Google Maps / device location is wired up, the typed
+// location is sent as location.address (extra keys are accepted) alongside
+// the placeholder coordinates below. Replace these with real ones then -
+// nothing else about this call needs to change.
+const PLACEHOLDER_COORDINATES = { latitude: 5.6037, longitude: -0.187 }; // Accra
 
 export function SellerProfileSetupScreen({ navigation, route }: any) {
   const { phone, email, password } = route.params as { phone: string; email: string; password: string };
@@ -54,16 +60,14 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
         password,
         fullName,
         businessName,
-        location,
+        location: { ...PLACEHOLDER_COORDINATES, address: location.trim() },
         photoUri,
       });
       if (res.success) {
-        navigation.navigate("OtpVerify", {
-          userId: res.data.userId,
-          phone: res.data.phone,
-          purpose: "sellerRegister",
-        });
+        navigation.navigate("OtpVerify", { email, phone, purpose: "sellerRegister" });
       } else {
+        // Duplicate email / phone / shop name come back as a 409 with a
+        // ready-to-show message and no field-level `errors` map.
         Alert.alert("Couldn't create account", res.message);
       }
     } catch {

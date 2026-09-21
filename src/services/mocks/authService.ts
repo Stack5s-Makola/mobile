@@ -172,14 +172,16 @@ export async function registerSeller(
     role: "SELLER",
     fullName: payload.fullName,
     businessName: payload.businessName,
-    location: payload.location,
+    // The real payload carries coordinates plus the typed place name; the
+    // mock's PendingUser only has a display string, so keep the address.
+    location: payload.location.address ?? "",
     photoUri: payload.photoUri,
   });
-  console.log(`[mock authService] OTP for ${payload.phone}: ${MOCK_OTP}`);
+  console.log(`[mock authService] OTP for ${payload.email}: ${MOCK_OTP}`);
   return delay({
     success: true,
-    message: "Account created",
-    data: { userId: id, phone: payload.phone },
+    message: "Seller profile created. Check your email for a verification code.",
+    data: { saved: true },
   });
 }
 

@@ -27,7 +27,10 @@ export function RegisterScreen({ navigation, route }: any) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const canSubmit = phone.length > 0 && email.length > 0 && password.length >= 6 && password === confirmPassword;
+  // 8 is the backend's floor - catching it here avoids filling in the whole
+  // profile screen only to be rejected on the final submission.
+  const canSubmit =
+    phone.length > 0 && email.length > 0 && password.length >= 8 && password === confirmPassword;
 
   function handleContinue() {
     if (password !== confirmPassword) {
@@ -74,7 +77,7 @@ export function RegisterScreen({ navigation, route }: any) {
         />
         <AppTextInput
           label="Password"
-          placeholder="Enter password"
+          placeholder="At least 8 characters"
           secureTextEntry
           value={password}
           onChangeText={setPassword}

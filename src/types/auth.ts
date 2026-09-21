@@ -45,22 +45,36 @@ export interface SellerProfilePayload {
 // TODO: field names below are our best guess pending Daniel confirming
 // the exact request body for POST /api/register/set-seller-profile.
 // Likely correct given what the screen collects, but not verified.
+// Confirmed against POST /api/register/set-seller-profile (probed live).
+// Field names differ from ours on the wire - the service maps them:
+//   fullName -> name, businessName -> shopName, plus role: "SELLER".
+//
+// location is GPS coordinates, NOT a place name.
+// photoUri is not part of the contract - the endpoint ignores it, so the
+// seller's photo is not uploaded anywhere yet.
+export interface SellerLocation {
+  latitude: number;
+  longitude: number;
+  // Extra keys are accepted by the endpoint (verified), so the location the
+  // seller actually typed is carried here until real coordinates exist.
+  address?: string;
+}
+
 export interface RegisterSellerPayload {
   phone: string;
   email: string;
   password: string;
   fullName: string;
   businessName: string;
-  location: string;
+  location: SellerLocation;
   photoUri?: string;
 }
 
-// TODO: response shape is a guess - specifically need to confirm what
-// identifier the follow-up OTP-verify call should use (userId? phone?
-// something else the backend returns).
+// Confirmed: a successful registration returns only { saved: true } - no
+// userId and no phone. The follow-up OTP step therefore has to identify the
+// account by the email the client already collected.
 export interface RegisterSellerResult {
-  userId: string;
-  phone: string;
+  saved: boolean;
 }
 
 export interface AuthSessionResult {

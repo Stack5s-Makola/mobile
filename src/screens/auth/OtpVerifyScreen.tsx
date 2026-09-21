@@ -25,9 +25,10 @@ const authService = mockAuthService;
 const CODE_LENGTH = 6;
 
 export function OtpVerifyScreen({ navigation, route }: any) {
-  const { userId, phone, purpose = "register" } = route.params as {
-    userId: string;
-    phone: string;
+  const { userId, phone, email, purpose = "register" } = route.params as {
+    userId?: string;
+    phone?: string;
+    email?: string; // seller flow: the code is emailed, not texted
     purpose?: "register" | "resetPassword" | "sellerRegister";
   };
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
@@ -73,6 +74,13 @@ export function OtpVerifyScreen({ navigation, route }: any) {
         return;
       }
 
+      // Only the mock-backed flows reach here, and both are entered with a
+      // userId; the seller flow returned above.
+      if (!userId) {
+        Alert.alert("Something went wrong", "Please start the sign-up again.");
+        return;
+      }
+
       const res = await authService.verifyOtp({ userId, code });
       if (res.success) {
         if (purpose === "resetPassword") {
@@ -94,7 +102,7 @@ export function OtpVerifyScreen({ navigation, route }: any) {
         <ArrowLeft size={28} color={colors.text} />
       </Pressable>
       <Text style={styles.title}>Verify your number</Text>
-      <Text style={styles.subtitle}>We&apos;ve sent a 6-digit code to {phone}.</Text>
+      <Text style={styles.subtitle}>We&apos;ve sent a 6-digit code to {email ?? phone}.</Text>
 
       <View style={styles.codeRow}>
         {digits.map((digit, i) => (
