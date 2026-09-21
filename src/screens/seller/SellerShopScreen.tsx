@@ -7,7 +7,6 @@ import {
   Pressable,
   Switch,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +19,7 @@ import { Chip } from "@components/Chip";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { CATEGORIES } from "@constants/categories";
 import { colors, fonts, radii } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { SellerTabProps } from "@navigation/sellerRoutes";
 import { sellerService } from "@services/sellerService";
 import { Shop, UpdateShopPayload } from "@types/seller";
@@ -33,6 +33,7 @@ function toForm(shop: Shop): Form {
 }
 
 export function SellerShopScreen(_props: SellerTabProps<"Shop">) {
+  const { showToast } = useToast();
   const [saved, setSaved] = useState<Form | null>(null);
   const [form, setForm] = useState<Form | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,12 +120,12 @@ export function SellerShopScreen(_props: SellerTabProps<"Shop">) {
         const next = toForm(res.data);
         setSaved(next);
         setForm(next);
-        Alert.alert("Shop updated", "Buyers will see your changes right away.");
+        showToast("Shop updated. Buyers will see your changes right away.", "success");
       } else {
-        Alert.alert("Couldn't update shop", res.message);
+        showToast(res.message, "error");
       }
     } catch {
-      Alert.alert("Couldn't update shop", "Check your connection and try again.");
+      showToast("Check your connection and try again.", "error");
     } finally {
       setIsSaving(false);
     }

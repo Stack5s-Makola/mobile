@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, ScrollView, Alert } from "react-native";
+import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
 import { Mail, Phone, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { UserRole } from "@types/user";
 
 // NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days
@@ -22,6 +23,7 @@ const WORDMARK_URL = "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a
 
 export function RegisterScreen({ navigation, route }: any) {
   const role: UserRole = route?.params?.role ?? "BUYER";
+  const { showToast } = useToast();
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +36,7 @@ export function RegisterScreen({ navigation, route }: any) {
 
   function handleContinue() {
     if (password !== confirmPassword) {
-      Alert.alert("Passwords don't match", "Please re-enter your password.");
+      showToast("Passwords don't match. Please re-enter your password.", "error");
       return;
     }
     navigation.navigate(role === "SELLER" ? "SellerProfileSetup" : "BuyerProfileSetup", {

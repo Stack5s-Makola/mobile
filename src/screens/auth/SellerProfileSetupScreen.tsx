@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet, SafeAreaView } from "react-native";
 import { ArrowLeft, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import * as apiAuthService from "@services/api/authService";
 
 // This screen calls the REAL backend directly (not the authService
@@ -26,6 +27,7 @@ const PLACEHOLDER_COORDINATES = { latitude: 5.6037, longitude: -0.187 }; // Accr
 
 export function SellerProfileSetupScreen({ navigation, route }: any) {
   const { phone, email, password } = route.params as { phone: string; email: string; password: string };
+  const { showToast } = useToast();
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [location, setLocation] = useState("");
@@ -37,7 +39,7 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
   async function handlePickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo library access to upload a profile photo.");
+      showToast("Allow photo library access to upload a profile photo.", "error");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -64,14 +66,27 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
         photoUri,
       });
       if (res.success) {
-        navigation.navigate("OtpVerify", { email, phone, purpose: "sellerRegister" });
+        showToast(res.message, "success");
+        // The backend returns none of this back, so carry it forward - the
+        // OTP screen uses it to build the session the seller lands in.
+        navigation.navigate("OtpVerify", {
+          email,
+          phone,
+          purpose: "sellerRegister",
+          profile: {
+            fullName: fullName.trim(),
+            businessName: businessName.trim(),
+            location: location.trim(),
+            photoUri,
+          },
+        });
       } else {
         // Duplicate email / phone / shop name come back as a 409 with a
         // ready-to-show message and no field-level `errors` map.
-        Alert.alert("Couldn't create account", res.message);
+        showToast(res.message, "error");
       }
     } catch {
-      Alert.alert("Couldn't create account", "Check your connection and try again.");
+      showToast("Check your connection and try again.", "error");
     } finally {
       setIsLoading(false);
     }

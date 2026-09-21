@@ -11,9 +11,37 @@ export interface RegisterResult {
   phone: string;
 }
 
+// Mock-backed flows still identify the account by userId.
 export interface VerifyOtpPayload {
   userId: string;
   code: string;
+}
+
+// The real endpoint, POST /api/verify-otp, keys off the email instead -
+// seller registration returns no userId to key off. Verified live:
+//   400 { errors: { code: "code must be 6 digits" } }  malformed code
+//   400 "This verification code is incorrect"          wrong code
+//   400 "No verification code is pending for this email address"
+export interface VerifyEmailOtpPayload {
+  email: string;
+  code: string;
+}
+
+// POST /api/verify-otp/resend. Throttled to one per 60 seconds; a faster tap
+// returns 400 "Please wait 56 seconds before requesting another code".
+export interface ResendOtpResult {
+  email: string;
+  expiresAt: string; // ISO, ~10 minutes out
+}
+
+// Everything the seller typed during sign-up. The backend stores it but
+// returns none of it, so it rides through the OTP screen in nav params to
+// populate the session that the seller dashboard reads.
+export interface SellerProfileDraft {
+  fullName: string;
+  businessName: string;
+  location: string;
+  photoUri?: string;
 }
 
 export interface VerifyOtpResult {

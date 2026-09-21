@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, SafeAreaView } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
 import * as mockAuthService from "@services/mocks/authService";
 
@@ -12,6 +13,7 @@ const authService = mockAuthService;
 export function BuyerProfileSetupScreen({ navigation, route }: any) {
   const { userId } = route.params as { userId: string };
   const { login } = useAuth();
+  const { showToast } = useToast();
   const [fullName, setFullName] = useState("");
   const [location, setLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +34,7 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
           location: res.data.location,
         });
       } else {
-        Alert.alert("Couldn't complete profile", res.message);
+        showToast(res.message, "error");
       }
     } finally {
       setIsLoading(false);

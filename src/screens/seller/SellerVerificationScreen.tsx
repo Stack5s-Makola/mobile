@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   KeyboardAvoidingView,
@@ -28,6 +27,7 @@ import { Chip } from "@components/Chip";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { DOCUMENT_TYPE_LABELS } from "@constants/sellerStatus";
 import { colors, fonts, radii } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { SellerStackProps } from "@navigation/sellerRoutes";
 import { sellerService } from "@services/sellerService";
 import {
@@ -75,6 +75,7 @@ const STATUS_CARD: Record<
 const DOCUMENT_TYPES = Object.keys(DOCUMENT_TYPE_LABELS) as VerificationDocumentType[];
 
 export function SellerVerificationScreen({ navigation }: SellerStackProps<"Verification">) {
+  const { showToast } = useToast();
   const [verification, setVerification] = useState<Verification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -123,10 +124,10 @@ export function SellerVerificationScreen({ navigation }: SellerStackProps<"Verif
       if (res.success) {
         setVerification(res.data);
       } else {
-        Alert.alert("Couldn't submit", res.message);
+        showToast(res.message, "error");
       }
     } catch {
-      Alert.alert("Couldn't submit", "Check your connection and try again.");
+      showToast("Check your connection and try again.", "error");
     } finally {
       setIsSubmitting(false);
     }

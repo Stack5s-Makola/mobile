@@ -12,6 +12,7 @@ export const colors = {
   primarySoft: "#DCEBE5", // tinted fills behind primary icons/badges
   warning: "#B7791F",
   warningSoft: "#FDF3E1",
+  success: "#16A34A", // toast confirmations
   danger: "#C0392B",
   dangerSoft: "#FBE9E7",
   neutralSoft: "#EEF1F0",

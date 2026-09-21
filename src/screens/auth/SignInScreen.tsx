@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Image, StyleSheet, SafeAreaView } from "react-native";
 import { Phone, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
 import * as mockAuthService from "@services/mocks/authService";
 
@@ -15,6 +16,7 @@ const WORDMARK = "https://www.figma.com/api/mcp/asset/45f68554-0092-45a1-89ec-48
 
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +39,7 @@ export function SignInScreen({ navigation }: any) {
           photoUri: res.data.photoUri,
         });
       } else {
-        Alert.alert("Couldn't sign in", res.message);
+        showToast(res.message, "error");
       }
     } finally {
       setIsLoading(false);

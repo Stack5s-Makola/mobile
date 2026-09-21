@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, SafeAreaView } from "react-native";
 import { ArrowLeft, Phone } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import * as mockAuthService from "@services/mocks/authService";
 
 const authService = mockAuthService;
 
 export function ForgotPasswordScreen({ navigation }: any) {
+  const { showToast } = useToast();
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,7 +21,7 @@ export function ForgotPasswordScreen({ navigation }: any) {
       if (res.success) {
         navigation.navigate("OtpVerify", { userId: res.data.userId, phone, purpose: "resetPassword" });
       } else {
-        Alert.alert("Couldn't send code", res.message);
+        showToast(res.message, "error");
       }
     } finally {
       setIsLoading(false);

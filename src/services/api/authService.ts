@@ -14,7 +14,12 @@ import {
 } from "@types/auth";
 import { UserRole } from "@types/user";
 import { apiRequest } from "./client";
-import { RegisterSellerPayload, RegisterSellerResult } from "@types/auth";
+import {
+  RegisterSellerPayload,
+  RegisterSellerResult,
+  VerifyEmailOtpPayload,
+  ResendOtpResult,
+} from "@types/auth";
 
 // // Real backend calls. Same function names/signatures as
 // // src/services/mocks/authService.ts on purpose - swap the import in each
@@ -121,9 +126,30 @@ export function registerSeller(
   });
 }
 
-// POST /api/otp - (re)sends a verification code to an email address.
-export function sendOtp(email: string): Promise<ApiResponse<unknown>> {
-  return apiRequest("/api/otp", {
+// POST /api/verify-otp - checks the 6-digit code that was emailed.
+//
+// Failure messages are already user-facing, so screens can show res.message
+// as-is; a malformed code comes back under errors.code instead.
+//
+// The success payload isn't pinned down yet (it can't be probed without a
+// real code from an inbox), so the result is left as unknown - the screen
+// only branches on res.success today.
+export function verifyOtp(
+  payload: VerifyEmailOtpPayload
+): Promise<ApiResponse<unknown>> {
+  return apiRequest("/api/verify-otp", {
+    method: "POST",
+    body: JSON.stringify({ email: payload.email.trim(), code: payload.code }),
+  });
+}
+
+// POST /api/verify-otp/resend - sends a fresh code to an email address.
+//
+//   200 { email, expiresAt }
+//   400 "Please wait 56 seconds before requesting another code"  (throttled)
+//   400 { errors: { email: "Please provide a valid email address" } }
+export function resendOtp(email: string): Promise<ApiResponse<ResendOtpResult>> {
+  return apiRequest("/api/verify-otp/resend", {
     method: "POST",
     body: JSON.stringify({ email: email.trim() }),
   });
