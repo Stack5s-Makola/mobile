@@ -1,15 +1,6 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  Image,
-  Pressable,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { useAuth } from "@context/AuthContext";
 import { buyerProfileService } from "@services/buyerProfileService";

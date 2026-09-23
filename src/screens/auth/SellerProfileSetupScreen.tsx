@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { AppTextInput } from "@components/AppTextInput";
