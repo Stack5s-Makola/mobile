@@ -75,7 +75,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
   }
 
   function editListing(listingId: string) {
-    navigation.navigate("Shop", {
+    navigation.navigate("Listing", {
       screen: "ListingForm",
       params: { listingId },
       initial: false,

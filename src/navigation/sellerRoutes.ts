@@ -9,7 +9,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 // ├── SellerTabs (bottom tabs)
 // │   ├── Home
 // │   ├── Create   (no screen of its own - tapping it opens AddProduct)
-// │   ├── Shop     (stack: ListingsHome -> ListingForm)
+// │   ├── Listing  (stack: ListingsHome -> ListingForm)
 // │   └── Profile
 // ├── AddProduct   (full screen above the tabs, from the Create tab)
 // ├── ProductPreview (full screen, from AddProduct)
@@ -26,7 +26,7 @@ export type ListingsStackParamList = {
 export type SellerTabParamList = {
   Home: undefined;
   Create: undefined;
-  Shop: NavigatorScreenParams<ListingsStackParamList> | undefined;
+  Listing: NavigatorScreenParams<ListingsStackParamList> | undefined;
   Profile: undefined;
 };
 

@@ -167,6 +167,17 @@ export function updateProfilePicture(
   });
 }
 
+// GET /api/seller/shop - despite the name, this returns the signed-in
+// seller's PRODUCTS ("Products retrieved"), same item shape as the
+// dashboard's recentListings. Verified live.
+export async function getMyListings(): Promise<ApiResponse<DashboardListing[]>> {
+  const res = await authedApiRequest<ApiDashboardListing[]>("/api/seller/shop");
+  return {
+    ...res,
+    data: res.success && Array.isArray(res.data) ? res.data.map(toDashboardListing) : [],
+  };
+}
+
 export async function getDashboard(): Promise<ApiResponse<SellerDashboardData>> {
   const res = await authedApiRequest<SellerDashboardData & {
     recentListings?: ApiDashboardListing[] | null;
@@ -199,7 +210,9 @@ export function updateShop(payload: UpdateShopPayload): Promise<ApiResponse<Shop
   return authedApiRequest("/api/seller/shop", { method: "PATCH", body: JSON.stringify(payload) });
 }
 
-export function getMyListings(): Promise<ApiResponse<SellerListing[]>> {
+// NOT LIVE: /api/seller/listings 404s. Kept alongside the other unused stubs
+// below; getMyListings() above is the one that works.
+export function getMyListingsLegacy(): Promise<ApiResponse<SellerListing[]>> {
   return authedApiRequest("/api/seller/listings");
 }
 

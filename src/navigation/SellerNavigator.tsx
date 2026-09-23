@@ -53,7 +53,7 @@ function CreatePlaceholder() {
 const TAB_ICONS: Record<keyof SellerTabParamList, typeof Home> = {
   Home,
   Create: Plus,
-  Shop: Package,
+  Listing: Package,
   Profile: User,
 };
 
@@ -78,7 +78,7 @@ function SellerTabs() {
           },
         })}
       />
-      <Tab.Screen name="Shop" component={ListingsNavigator} />
+      <Tab.Screen name="Listing" component={ListingsNavigator} />
       <Tab.Screen name="Profile" component={SellerProfileScreen} />
     </Tab.Navigator>
   );

@@ -166,13 +166,13 @@ export function SellerProfileScreen({ navigation }: SellerTabProps<"Profile">) {
           <MenuRow
             icon={<Package size={18} color={GREEN} />}
             label="My Listings"
-            onPress={() => navigation.navigate("Shop", { screen: "ListingsHome" })}
+            onPress={() => navigation.navigate("Listing", { screen: "ListingsHome" })}
           />
           <MenuRow
             icon={<Plus size={18} color={GREEN} />}
             label="New Products"
             onPress={() =>
-              navigation.navigate("Shop", {
+              navigation.navigate("Listing", {
                 screen: "ListingForm",
                 params: {},
                 initial: false,
