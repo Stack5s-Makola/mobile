@@ -2,18 +2,47 @@ import { ApiResponse } from "@types/api";
 import { Listing } from "@types/listing";
 import { apiRequest } from "./client";
 
-// Real backend calls. Served under /api/products (not /api/listings -
-// confirmed with the backend dev). Same function names/signatures as
-// src/services/mocks/listingService.ts.
+// Buyer product endpoints. Same function names/signatures as the mock
+// service so screens can remain independent of the transport.
 
-export function getListings(): Promise<ApiResponse<Listing[]>> {
-  return apiRequest<Listing[]>("/api/products");
+export interface ProductFilters {
+  category?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusKm?: number;
 }
 
-export function getListingById(id: string): Promise<ApiResponse<Listing | null>> {
-  return apiRequest<Listing | null>(`/api/products/${id}`);
+export function getListings(
+  filters: ProductFilters = {},
+): Promise<ApiResponse<Listing[]>> {
+  const params = new URLSearchParams();
+  if (filters.category) params.set("category", filters.category);
+  if (filters.latitude !== undefined)
+    params.set("latitude", String(filters.latitude));
+  if (filters.longitude !== undefined)
+    params.set("longitude", String(filters.longitude));
+  if (filters.radiusKm !== undefined)
+    params.set("radiusKm", String(filters.radiusKm));
+  const query = params.toString();
+  return apiRequest<Listing[]>(`/buyer/products${query ? `?${query}` : ""}`);
 }
 
-export function getListingsByCategory(categoryId: string): Promise<ApiResponse<Listing[]>> {
-  return apiRequest<Listing[]>(`/api/products?categoryId=${categoryId}`);
+export function searchListings(query: string): Promise<ApiResponse<Listing[]>> {
+  return apiRequest<Listing[]>(
+    `/buyer/products/search?q=${encodeURIComponent(query.trim())}`,
+  );
+}
+
+export function getListingById(
+  id: string,
+): Promise<ApiResponse<Listing | null>> {
+  return apiRequest<Listing | null>(
+    `/buyer/products/${encodeURIComponent(id)}`,
+  );
+}
+
+export function getListingsByCategory(
+  categoryId: string,
+): Promise<ApiResponse<Listing[]>> {
+  return getListings({ category: categoryId });
 }

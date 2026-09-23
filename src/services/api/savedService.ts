@@ -1,23 +1,36 @@
 import { ApiResponse } from "@types/api";
-import { apiRequest } from "./client";
-import { SavedSeller } from "@services/mocks/savedService";
+import { authedApiRequest } from "./client";
+import { Listing } from "@types/listing";
 
-// Real backend calls, once SavedProduct/SavedSeller endpoints exist
-// (per the architecture doc). Same names/signatures as
-// src/services/mocks/savedService.ts.
-
-export function getSavedProductIds(): Promise<ApiResponse<string[]>> {
-  return apiRequest<string[]>("/api/saved/products");
+export interface SavedShop {
+  id?: string;
+  name: string;
+  phone?: string;
+  image?: string;
+  photoUri?: string;
 }
 
-export function toggleSavedProduct(id: string): Promise<ApiResponse<{ saved: boolean }>> {
-  return apiRequest(`/api/saved/products/${id}`, { method: "POST" });
+export function getSavedProducts(): Promise<ApiResponse<Listing[]>> {
+  return authedApiRequest<Listing[]>("/buyer/saved/products");
 }
 
-export function getSavedSellers(): Promise<ApiResponse<SavedSeller[]>> {
-  return apiRequest<SavedSeller[]>("/api/saved/sellers");
+export function toggleSavedProduct(
+  id: string,
+): Promise<ApiResponse<{ saved: boolean }>> {
+  return authedApiRequest(`/buyer/saved/products/${encodeURIComponent(id)}`, {
+    method: "POST",
+  });
 }
 
-export function toggleSavedSeller(seller: SavedSeller): Promise<ApiResponse<{ saved: boolean }>> {
-  return apiRequest(`/api/saved/sellers`, { method: "POST", body: JSON.stringify(seller) });
+export function getSavedShops(): Promise<ApiResponse<SavedShop[]>> {
+  return authedApiRequest<SavedShop[]>("/buyer/saved/shops");
+}
+
+export function toggleSavedShop(
+  shop: SavedShop,
+): Promise<ApiResponse<{ saved: boolean }>> {
+  return authedApiRequest(`/buyer/saved/shops`, {
+    method: "POST",
+    body: JSON.stringify(shop),
+  });
 }
