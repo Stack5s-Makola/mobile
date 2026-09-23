@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { MapPin, MoreVertical, Plus } from "lucide-react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { colors, fonts, radii } from "@constants/theme";
 import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
 import { useAuth } from "@context/AuthContext";
@@ -23,6 +24,12 @@ import { firstName, formatPrice, initials } from "@utils/format";
 // Reads GET /api/seller/dashboard directly rather than through the
 // sellerService swap-point: that endpoint is live, while shop/listings/
 // verification are still 404 and stay on the mock.
+
+// The "+ Add products" fill. Bright enough that black type reads better on
+// it than white.
+const LIME = "#B5F505";
+// Verified tick on the shop avatar.
+const BLUE = "#1D9BF0";
 
 const STATUS_LABEL: Record<DashboardListing["status"], string> = {
   pending: "Pending",
@@ -62,7 +69,9 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
   );
 
   function goToAddListing() {
-    navigation.navigate("Shop", { screen: "ListingForm", params: {}, initial: false });
+    // Same destination as the Create tab - the Add Product form, pushed above
+    // the tabs rather than the older listing form.
+    navigation.navigate("AddProduct");
   }
 
   function editListing(listingId: string) {
@@ -81,7 +90,10 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
     );
   }
 
-  const displayName = dashboard?.name ?? session?.user.fullName;
+  // The greeting is the person, not the shop. Deliberately NOT dashboard.name:
+  // that endpoint returns the shop name there, so it would read "Hello, Ama
+  // Fabrics". fullName is what the seller typed as their own name at sign-up.
+  const displayName = session?.user.fullName;
   const shopName = dashboard?.shopName ?? session?.user.businessName;
 
   return (
@@ -99,13 +111,26 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
         <Text style={styles.greeting}>Hello, {firstName(displayName)}</Text>
 
         <View style={styles.identity}>
-          {dashboard?.avatar ? (
-            <Image source={{ uri: dashboard.avatar }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarInitials}>{initials(shopName)}</Text>
-            </View>
-          )}
+          {/* avatarBox matches the avatar exactly so the badge pins to the
+              circle's edge. */}
+          <View style={styles.avatarBox}>
+            {dashboard?.avatar ? (
+              <Image source={{ uri: dashboard.avatar }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Text style={styles.avatarInitials}>{initials(shopName)}</Text>
+              </View>
+            )}
+            {session?.user.emailVerified ? (
+              <MaterialIcons
+                name="verified"
+                size={20}
+                color={BLUE}
+                style={styles.verifiedBadge}
+                accessibilityLabel="Verified"
+              />
+            ) : null}
+          </View>
           <Text style={styles.shopName} numberOfLines={2}>
             {shopName}
           </Text>
@@ -129,7 +154,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
                 onPress={goToAddListing}
                 accessibilityRole="button"
               >
-                <Plus size={18} color={colors.white} />
+                <Plus size={18} color={colors.text} />
                 <Text style={styles.addButtonLabel}>Add products</Text>
               </Pressable>
             </View>
@@ -233,7 +258,9 @@ const styles = StyleSheet.create({
 
   greeting: { fontSize: 14, fontFamily: fonts.bodyMedium, color: colors.textMuted },
   identity: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: -4 },
+  avatarBox: { width: 52, height: 52 },
   avatar: { width: 52, height: 52, borderRadius: 26 },
+  verifiedBadge: { position: "absolute", right: -2, bottom: -2 },
   avatarFallback: {
     backgroundColor: colors.primarySoft,
     alignItems: "center",
@@ -249,13 +276,18 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     padding: 18,
     gap: 18,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardTitle: { fontSize: 18, fontFamily: fonts.headline, color: colors.text },
   counts: { flexDirection: "row" },
   count: { flex: 1, alignItems: "flex-start" },
-  countValue: { fontSize: 26, fontFamily: fonts.headline, color: colors.text },
+  countValue: { fontSize: 42, fontFamily: fonts.headline, color: colors.text },
   countLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: fonts.bodyMedium,
     color: colors.primary,
     marginTop: 2,
@@ -265,11 +297,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: colors.primary,
+    backgroundColor: LIME,
     borderRadius: radii.button,
     paddingVertical: 12,
   },
-  addButtonLabel: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.white },
+  addButtonLabel: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
 
   sectionTitle: { fontSize: 16, fontFamily: fonts.headline, color: colors.text },
 

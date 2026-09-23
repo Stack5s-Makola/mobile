@@ -8,7 +8,6 @@ import {
   Switch,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -133,124 +132,127 @@ export function SellerShopScreen({ navigation }: SellerStackProps<"ShopDetails">
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentInset={{ bottom: KEYBOARD_GAP }}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.back}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <ArrowLeft size={28} color={colors.text} />
+        </Pressable>
+        <Text style={styles.title}>My shop</Text>
+        <Text style={styles.subtitle}>This is how buyers see your business.</Text>
+
+        <View style={styles.photoSection}>
           <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.back}
+            style={styles.photoCircle}
+            onPress={handlePickPhoto}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel="Change shop photo"
           >
-            <ArrowLeft size={28} color={colors.text} />
+            {form.photoUri ? (
+              <Image source={{ uri: form.photoUri }} style={styles.photoImage} />
+            ) : (
+              <Store size={40} color={colors.primary} />
+            )}
           </Pressable>
-          <Text style={styles.title}>My shop</Text>
-          <Text style={styles.subtitle}>This is how buyers see your business.</Text>
+          <Pressable style={styles.uploadBadge} onPress={handlePickPhoto}>
+            <Camera size={14} color={colors.white} />
+            <Text style={styles.uploadLabel}>
+              {form.photoUri ? "Change photo" : "Add shop photo"}
+            </Text>
+          </Pressable>
+        </View>
 
-          <View style={styles.photoSection}>
-            <Pressable
-              style={styles.photoCircle}
-              onPress={handlePickPhoto}
-              accessibilityRole="button"
-              accessibilityLabel="Change shop photo"
-            >
-              {form.photoUri ? (
-                <Image source={{ uri: form.photoUri }} style={styles.photoImage} />
-              ) : (
-                <Store size={40} color={colors.primary} />
-              )}
-            </Pressable>
-            <Pressable style={styles.uploadBadge} onPress={handlePickPhoto}>
-              <Camera size={14} color={colors.white} />
-              <Text style={styles.uploadLabel}>
-                {form.photoUri ? "Change photo" : "Add shop photo"}
-              </Text>
-            </Pressable>
+        <View style={styles.openRow}>
+          <View style={styles.flex}>
+            <Text style={styles.openTitle}>
+              {form.isOpen ? "Open for business" : "Temporarily closed"}
+            </Text>
+            <Text style={styles.hint}>
+              {form.isOpen
+                ? "Buyers can see your listings and contact you."
+                : "Your listings are hidden from buyers until you reopen."}
+            </Text>
           </View>
+          <Switch
+            value={form.isOpen}
+            onValueChange={(v) => update("isOpen", v)}
+            trackColor={{ true: colors.primary, false: colors.divider }}
+            thumbColor={colors.white}
+          />
+        </View>
 
-          <View style={styles.openRow}>
-            <View style={styles.flex}>
-              <Text style={styles.openTitle}>
-                {form.isOpen ? "Open for business" : "Temporarily closed"}
-              </Text>
-              <Text style={styles.hint}>
-                {form.isOpen
-                  ? "Buyers can see your listings and contact you."
-                  : "Your listings are hidden from buyers until you reopen."}
-              </Text>
-            </View>
-            <Switch
-              value={form.isOpen}
-              onValueChange={(v) => update("isOpen", v)}
-              trackColor={{ true: colors.primary, false: colors.divider }}
-              thumbColor={colors.white}
-            />
+        <AppTextInput
+          label="Business name"
+          placeholder="Enter your business name"
+          value={form.businessName}
+          onChangeText={(t) => update("businessName", t)}
+          maxLength={60}
+        />
+        <AppTextInput
+          label="About your shop"
+          placeholder="What you sell, what makes you different..."
+          value={form.description}
+          onChangeText={(t) => update("description", t)}
+          multiline
+          maxLength={500}
+          style={styles.multiline}
+        />
+        <AppTextInput
+          label="Location"
+          placeholder="e.g. Makola Market, Accra"
+          value={form.location}
+          onChangeText={(t) => update("location", t)}
+        />
+        <AppTextInput
+          label="Contact phone"
+          placeholder="e.g. 024 000 0000"
+          value={form.phone}
+          onChangeText={(t) => update("phone", t)}
+          keyboardType="phone-pad"
+        />
+        <AppTextInput
+          label="Opening hours"
+          placeholder="e.g. Mon – Sat, 8:00am – 6:00pm"
+          value={form.openingHours}
+          onChangeText={(t) => update("openingHours", t)}
+        />
+
+        <View>
+          <Text style={styles.label}>What do you sell?</Text>
+          <Text style={styles.hint}>Pick all that apply.</Text>
+          <View style={styles.chips}>
+            {CATEGORIES.map((c) => (
+              <Chip
+                key={c}
+                label={c}
+                selected={form.categories.includes(c)}
+                onPress={() => toggleCategory(c)}
+              />
+            ))}
           </View>
+        </View>
 
-          <AppTextInput
-            label="Business name"
-            placeholder="Enter your business name"
-            value={form.businessName}
-            onChangeText={(t) => update("businessName", t)}
-            maxLength={60}
-          />
-          <AppTextInput
-            label="About your shop"
-            placeholder="What you sell, what makes you different..."
-            value={form.description}
-            onChangeText={(t) => update("description", t)}
-            multiline
-            maxLength={500}
-            style={styles.multiline}
-          />
-          <AppTextInput
-            label="Location"
-            placeholder="e.g. Makola Market, Accra"
-            value={form.location}
-            onChangeText={(t) => update("location", t)}
-          />
-          <AppTextInput
-            label="Contact phone"
-            placeholder="e.g. 024 000 0000"
-            value={form.phone}
-            onChangeText={(t) => update("phone", t)}
-            keyboardType="phone-pad"
-          />
-          <AppTextInput
-            label="Opening hours"
-            placeholder="e.g. Mon – Sat, 8:00am – 6:00pm"
-            value={form.openingHours}
-            onChangeText={(t) => update("openingHours", t)}
-          />
-
-          <View>
-            <Text style={styles.label}>What do you sell?</Text>
-            <Text style={styles.hint}>Pick all that apply.</Text>
-            <View style={styles.chips}>
-              {CATEGORIES.map((c) => (
-                <Chip
-                  key={c}
-                  label={c}
-                  selected={form.categories.includes(c)}
-                  onPress={() => toggleCategory(c)}
-                />
-              ))}
-            </View>
-          </View>
-
-          <PrimaryButton
-            label={isDirty ? "Save changes" : "No changes"}
-            onPress={handleSave}
-            disabled={!canSave}
-            loading={isSaving}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <PrimaryButton
+          label={isDirty ? "Save changes" : "No changes"}
+          onPress={handleSave}
+          disabled={!canSave}
+          loading={isSaving}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+// Breathing room between the focused field and the keyboard.
+const KEYBOARD_GAP = 40;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

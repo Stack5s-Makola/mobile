@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -155,129 +154,126 @@ export function SellerVerificationScreen({ navigation }: SellerStackProps<"Verif
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentInset={{ bottom: KEYBOARD_GAP }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => load(true)}
+            tintColor={colors.primary}
+          />
+        }
       >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={() => load(true)}
-              tintColor={colors.primary}
-            />
-          }
-        >
-          <View style={styles.topBar}>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <ArrowLeft size={26} color={colors.text} />
-            </Pressable>
-            <Text style={styles.title}>Verification</Text>
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <ArrowLeft size={26} color={colors.text} />
+          </Pressable>
+          <Text style={styles.title}>Verification</Text>
+        </View>
+
+        <View style={[styles.statusCard, { backgroundColor: card.bg }]}>
+          <card.icon size={28} color={card.fg} />
+          <View style={styles.flex}>
+            <Text style={[styles.statusTitle, { color: card.fg }]}>{card.title}</Text>
+            <Text style={styles.statusBody}>{card.body}</Text>
           </View>
+        </View>
 
-          <View style={[styles.statusCard, { backgroundColor: card.bg }]}>
-            <card.icon size={28} color={card.fg} />
-            <View style={styles.flex}>
-              <Text style={[styles.statusTitle, { color: card.fg }]}>{card.title}</Text>
-              <Text style={styles.statusBody}>{card.body}</Text>
-            </View>
+        {verification.status === "REJECTED" && verification.rejectionReason ? (
+          <View style={styles.reason}>
+            <Text style={styles.reasonLabel}>Reason</Text>
+            <Text style={styles.reasonBody}>{verification.rejectionReason}</Text>
           </View>
+        ) : null}
 
-          {verification.status === "REJECTED" && verification.rejectionReason ? (
-            <View style={styles.reason}>
-              <Text style={styles.reasonLabel}>Reason</Text>
-              <Text style={styles.reasonBody}>{verification.rejectionReason}</Text>
-            </View>
-          ) : null}
-
-          {!canEdit ? (
-            <View style={styles.summary}>
-              {verification.documentType ? (
-                <SummaryRow
-                  label="Document"
-                  value={DOCUMENT_TYPE_LABELS[verification.documentType]}
-                />
-              ) : null}
-              {verification.idNumber ? (
-                <SummaryRow label="ID number" value={maskId(verification.idNumber)} />
-              ) : null}
-              {verification.submittedAt ? (
-                <SummaryRow label="Submitted" value={formatDate(verification.submittedAt)} />
-              ) : null}
-            </View>
-          ) : (
-            <>
-              <View>
-                <Text style={styles.label}>1. Choose your ID type</Text>
-                <View style={styles.chips}>
-                  {DOCUMENT_TYPES.map((type) => (
-                    <Chip
-                      key={type}
-                      label={DOCUMENT_TYPE_LABELS[type]}
-                      selected={documentType === type}
-                      onPress={() => setDocumentType(type)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <View>
-                <Text style={styles.label}>2. Enter the ID number</Text>
-                <AppTextInput
-                  placeholder={
-                    documentType === "GHANA_CARD" ? "e.g. GHA-000000000-0" : "Enter ID number"
-                  }
-                  value={idNumber}
-                  onChangeText={setIdNumber}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
-              </View>
-
-              <View>
-                <Text style={styles.label}>3. Add photos</Text>
-                <View style={styles.uploads}>
-                  <UploadTile
-                    label={`Photo of your ${DOCUMENT_TYPE_LABELS[documentType]}`}
-                    icon={<FileText size={24} color={colors.primary} />}
-                    uri={documentUri}
-                    onPress={async () => {
-                      const uri = await pickImage({ askSource: true });
-                      if (uri) setDocumentUri(uri);
-                    }}
-                  />
-                  <UploadTile
-                    label="Selfie holding your ID"
-                    icon={<Camera size={24} color={colors.primary} />}
-                    uri={selfieUri}
-                    onPress={async () => {
-                      const uri = await pickImage({ askSource: true });
-                      if (uri) setSelfieUri(uri);
-                    }}
-                  />
-                </View>
-                <Text style={styles.hint}>
-                  Make sure all details are clear and readable, with no glare.
-                </Text>
-              </View>
-
-              <PrimaryButton
-                label={verification.status === "REJECTED" ? "Resubmit for review" : "Submit for review"}
-                onPress={handleSubmit}
-                disabled={!canSubmit}
-                loading={isSubmitting}
+        {!canEdit ? (
+          <View style={styles.summary}>
+            {verification.documentType ? (
+              <SummaryRow
+                label="Document"
+                value={DOCUMENT_TYPE_LABELS[verification.documentType]}
               />
-            </>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+            ) : null}
+            {verification.idNumber ? (
+              <SummaryRow label="ID number" value={maskId(verification.idNumber)} />
+            ) : null}
+            {verification.submittedAt ? (
+              <SummaryRow label="Submitted" value={formatDate(verification.submittedAt)} />
+            ) : null}
+          </View>
+        ) : (
+          <>
+            <View>
+              <Text style={styles.label}>1. Choose your ID type</Text>
+              <View style={styles.chips}>
+                {DOCUMENT_TYPES.map((type) => (
+                  <Chip
+                    key={type}
+                    label={DOCUMENT_TYPE_LABELS[type]}
+                    selected={documentType === type}
+                    onPress={() => setDocumentType(type)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View>
+              <Text style={styles.label}>2. Enter the ID number</Text>
+              <AppTextInput
+                placeholder={
+                  documentType === "GHANA_CARD" ? "e.g. GHA-000000000-0" : "Enter ID number"
+                }
+                value={idNumber}
+                onChangeText={setIdNumber}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.label}>3. Add photos</Text>
+              <View style={styles.uploads}>
+                <UploadTile
+                  label={`Photo of your ${DOCUMENT_TYPE_LABELS[documentType]}`}
+                  icon={<FileText size={24} color={colors.primary} />}
+                  uri={documentUri}
+                  onPress={async () => {
+                    const uri = await pickImage({ askSource: true });
+                    if (uri) setDocumentUri(uri);
+                  }}
+                />
+                <UploadTile
+                  label="Selfie holding your ID"
+                  icon={<Camera size={24} color={colors.primary} />}
+                  uri={selfieUri}
+                  onPress={async () => {
+                    const uri = await pickImage({ askSource: true });
+                    if (uri) setSelfieUri(uri);
+                  }}
+                />
+              </View>
+              <Text style={styles.hint}>
+                Make sure all details are clear and readable, with no glare.
+              </Text>
+            </View>
+
+            <PrimaryButton
+              label={verification.status === "REJECTED" ? "Resubmit for review" : "Submit for review"}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              loading={isSubmitting}
+            />
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -329,6 +325,9 @@ function UploadTile({
     </Pressable>
   );
 }
+
+// Breathing room between the focused field and the keyboard.
+const KEYBOARD_GAP = 40;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

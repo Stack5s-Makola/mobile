@@ -8,10 +8,13 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 // SellerStack
 // ├── SellerTabs (bottom tabs)
 // │   ├── Home
-// │   ├── Create   (no screen of its own - tapping it opens the listing form)
+// │   ├── Create   (no screen of its own - tapping it opens AddProduct)
 // │   ├── Shop     (stack: ListingsHome -> ListingForm)
 // │   └── Profile
+// ├── AddProduct   (full screen above the tabs, from the Create tab)
+// ├── ProductPreview (full screen, from AddProduct)
 // ├── BusinessName (full screen, from the Profile's Business Information list)
+// ├── PhoneNumber  (full screen, same list)
 // ├── ShopDetails  (full screen - shop name/photo/categories, from Profile)
 // └── Verification (full screen, opened from Home banner / Profile)
 
@@ -29,7 +32,21 @@ export type SellerTabParamList = {
 
 export type SellerStackParamList = {
   SellerTabs: NavigatorScreenParams<SellerTabParamList> | undefined;
+  AddProduct: undefined;
+  // Everything the seller typed, carried from AddProduct - nothing is saved
+  // until the submit endpoint exists.
+  ProductPreview: {
+    imageUri: string | null;
+    name: string;
+    category: string | null;
+    tags: string[];
+    price: string;
+    description: string;
+    location: string;
+    quantity: string;
+  };
   BusinessName: undefined;
+  PhoneNumber: undefined;
   ShopDetails: undefined;
   Verification: undefined;
 };

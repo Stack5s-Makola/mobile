@@ -11,6 +11,7 @@ import {
   Verification,
 } from "@types/seller";
 import { authedApiRequest } from "./client";
+import { normalizeAmount, normalizeCount } from "@utils/format";
 
 // Real backend calls. Same function names/signatures as
 // src/services/mocks/sellerService.ts on purpose - swap the import in
@@ -74,6 +75,52 @@ function toDashboardListing(item: ApiDashboardListing): DashboardListing {
   };
 }
 
+// POST /api/seller/add - multipart, because the product image rides along.
+// Verified live; returns { saved, id, status: "pending" } and the product
+// shows up in the dashboard's recentListings straight away.
+//
+//   name      required, <= 120 chars
+//   category  required, a NAME not an id ("Farm Produce"); created if new,
+//             matched case-insensitively
+//   price     required, > 0
+//   quantity  required, whole number >= 0
+//   tags      optional, sent as a comma-separated string; lower-cased, max 20
+//   image     optional, under 5MB
+//
+// latitude/longitude are deliberately NOT sent: the endpoint accepts them but
+// they MOVE THE SHOP, which is not what adding a product should do.
+export type AddProductPayload = {
+  name: string;
+  category: string;
+  price: string;
+  quantity: string;
+  tags: string[];
+  imageUri: string | null;
+};
+
+export function addProduct(
+  payload: AddProductPayload
+): Promise<ApiResponse<{ saved: boolean; id: string; status: string }>> {
+  const form = new FormData();
+  form.append("name", payload.name.trim());
+  form.append("category", payload.category.trim());
+  // Typed separators ("4,595.00") parse to NaN server-side.
+  form.append("price", normalizeAmount(payload.price));
+  form.append("quantity", normalizeCount(payload.quantity));
+  if (payload.tags.length > 0) form.append("tags", payload.tags.join(","));
+  if (payload.imageUri) {
+    const extension = (payload.imageUri.split(".").pop() ?? "").toLowerCase();
+    const safe = /^(jpg|jpeg|png|webp|heic)$/.test(extension) ? extension : "jpg";
+    form.append("image", {
+      uri: payload.imageUri,
+      name: `product.${safe}`,
+      type: safe === "jpg" ? "image/jpeg" : `image/${safe}`,
+    } as unknown as Blob);
+  }
+
+  return authedApiRequest("/api/seller/add", { method: "POST", body: form });
+}
+
 // POST /api/seller/me/update/shop-name - { shopName }.
 // Shop names are globally unique, so expect a 409 when one is taken (the
 // registration endpoint returns "That shop name is already taken").
@@ -81,6 +128,15 @@ export function updateShopName(shopName: string): Promise<ApiResponse<unknown>> 
   return authedApiRequest("/api/seller/me/update/shop-name", {
     method: "POST",
     body: JSON.stringify({ shopName: shopName.trim() }),
+  });
+}
+
+// POST /api/seller/me/update/phone - { phone }. Verified live; returns
+// { phone } on success, and a 400 with errors.phone for a malformed number.
+export function updatePhone(phone: string): Promise<ApiResponse<{ phone: string }>> {
+  return authedApiRequest("/api/seller/me/update/phone", {
+    method: "POST",
+    body: JSON.stringify({ phone: phone.trim() }),
   });
 }
 

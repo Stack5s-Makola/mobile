@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -180,154 +179,156 @@ export function ListingFormScreen({ navigation, route }: ListingsStackProps<"Lis
           {statusMeta ? <StatusBadge label={statusMeta.label} tone={statusMeta.tone} /> : null}
         </View>
       </View>
-
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentInset={{ bottom: KEYBOARD_GAP }}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View>
-            <Text style={styles.label}>Photos</Text>
-            <Text style={styles.hint}>
-              Up to {MAX_IMAGES}. The first photo is the one buyers see first.
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.images}
-            >
-              {images.map((uri, index) => (
-                <View key={`${index}-${uri}`} style={styles.imageTile}>
-                  <Image source={{ uri }} style={styles.image} />
-                  {index === 0 ? (
-                    <View style={styles.mainTag}>
-                      <Text style={styles.mainTagLabel}>Main</Text>
-                    </View>
-                  ) : null}
-                  <Pressable
-                    style={styles.removeImage}
-                    onPress={() => handleRemoveImage(index)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove photo"
-                  >
-                    <X size={14} color={colors.white} />
-                  </Pressable>
-                </View>
-              ))}
-              {images.length < MAX_IMAGES ? (
+        <View>
+          <Text style={styles.label}>Photos</Text>
+          <Text style={styles.hint}>
+            Up to {MAX_IMAGES}. The first photo is the one buyers see first.
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.images}
+          >
+            {images.map((uri, index) => (
+              <View key={`${index}-${uri}`} style={styles.imageTile}>
+                <Image source={{ uri }} style={styles.image} />
+                {index === 0 ? (
+                  <View style={styles.mainTag}>
+                    <Text style={styles.mainTagLabel}>Main</Text>
+                  </View>
+                ) : null}
                 <Pressable
-                  style={[styles.imageTile, styles.addImage]}
-                  onPress={handleAddImage}
+                  style={styles.removeImage}
+                  onPress={() => handleRemoveImage(index)}
+                  hitSlop={8}
                   accessibilityRole="button"
-                  accessibilityLabel="Add photo"
+                  accessibilityLabel="Remove photo"
                 >
-                  <ImagePlus size={24} color={colors.primary} />
-                  <Text style={styles.addImageLabel}>Add photo</Text>
+                  <X size={14} color={colors.white} />
                 </Pressable>
-              ) : null}
-            </ScrollView>
-          </View>
+              </View>
+            ))}
+            {images.length < MAX_IMAGES ? (
+              <Pressable
+                style={[styles.imageTile, styles.addImage]}
+                onPress={handleAddImage}
+                accessibilityRole="button"
+                accessibilityLabel="Add photo"
+              >
+                <ImagePlus size={24} color={colors.primary} />
+                <Text style={styles.addImageLabel}>Add photo</Text>
+              </Pressable>
+            ) : null}
+          </ScrollView>
+        </View>
 
-          <AppTextInput
-            label="Product name"
-            placeholder="e.g. Fresh tomatoes (basket)"
-            value={name}
-            onChangeText={setName}
-            maxLength={80}
-          />
+        <AppTextInput
+          label="Product name"
+          placeholder="e.g. Fresh tomatoes (basket)"
+          value={name}
+          onChangeText={setName}
+          maxLength={80}
+        />
 
-          <AppTextInput
-            label="Description"
-            placeholder="Size, condition, what's included..."
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            maxLength={1000}
-            style={styles.multiline}
-          />
+        <AppTextInput
+          label="Description"
+          placeholder="Size, condition, what's included..."
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          maxLength={1000}
+          style={styles.multiline}
+        />
 
-          <View style={styles.row}>
-            <View style={styles.flex}>
-              <AppTextInput
-                label="Price (GH₵)"
-                placeholder="0.00"
-                value={price}
-                onChangeText={setPrice}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={styles.flex}>
-              <AppTextInput
-                label="In stock"
-                placeholder="0"
-                value={stock}
-                onChangeText={(t) => setStock(t.replace(/[^0-9]/g, ""))}
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-
-          <View>
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.chips}>
-              {CATEGORIES.map((c) => (
-                <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.publishRow}>
-            <View style={styles.flex}>
-              <Text style={styles.publishTitle}>Visible to buyers</Text>
-              <Text style={styles.hint}>
-                {isPublished
-                  ? parsedStock === 0
-                    ? "Published, but shown as sold out until you add stock."
-                    : "Buyers nearby can find and view this listing."
-                  : "Saved as a draft - only you can see it."}
-              </Text>
-            </View>
-            <Switch
-              value={isPublished}
-              onValueChange={setIsPublished}
-              trackColor={{ true: colors.primary, false: colors.divider }}
-              thumbColor={colors.white}
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <AppTextInput
+              label="Price (GH₵)"
+              placeholder="0.00"
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="decimal-pad"
             />
           </View>
+          <View style={styles.flex}>
+            <AppTextInput
+              label="In stock"
+              placeholder="0"
+              value={stock}
+              onChangeText={(t) => setStock(t.replace(/[^0-9]/g, ""))}
+              keyboardType="number-pad"
+            />
+          </View>
+        </View>
 
-          {!canSave ? (
-            <Text style={styles.problems}>Add {problems.join(", ")} to save.</Text>
-          ) : null}
+        <View>
+          <Text style={styles.label}>Category</Text>
+          <View style={styles.chips}>
+            {CATEGORIES.map((c) => (
+              <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
+            ))}
+          </View>
+        </View>
 
-          <PrimaryButton
-            label={isEdit ? "Save changes" : isPublished ? "Publish listing" : "Save draft"}
-            onPress={handleSave}
-            disabled={!canSave || isDeleting}
-            loading={isSaving}
+        <View style={styles.publishRow}>
+          <View style={styles.flex}>
+            <Text style={styles.publishTitle}>Visible to buyers</Text>
+            <Text style={styles.hint}>
+              {isPublished
+                ? parsedStock === 0
+                  ? "Published, but shown as sold out until you add stock."
+                  : "Buyers nearby can find and view this listing."
+                : "Saved as a draft - only you can see it."}
+            </Text>
+          </View>
+          <Switch
+            value={isPublished}
+            onValueChange={setIsPublished}
+            trackColor={{ true: colors.primary, false: colors.divider }}
+            thumbColor={colors.white}
           />
+        </View>
 
-          {isEdit ? (
-            <Pressable
-              onPress={handleDelete}
-              disabled={isSaving || isDeleting}
-              style={styles.deleteButton}
-              accessibilityRole="button"
-            >
-              {isDeleting ? (
-                <ActivityIndicator color={colors.danger} />
-              ) : (
-                <Text style={styles.deleteLabel}>Delete listing</Text>
-              )}
-            </Pressable>
-          ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {!canSave ? (
+          <Text style={styles.problems}>Add {problems.join(", ")} to save.</Text>
+        ) : null}
+
+        <PrimaryButton
+          label={isEdit ? "Save changes" : isPublished ? "Publish listing" : "Save draft"}
+          onPress={handleSave}
+          disabled={!canSave || isDeleting}
+          loading={isSaving}
+        />
+
+        {isEdit ? (
+          <Pressable
+            onPress={handleDelete}
+            disabled={isSaving || isDeleting}
+            style={styles.deleteButton}
+            accessibilityRole="button"
+          >
+            {isDeleting ? (
+              <ActivityIndicator color={colors.danger} />
+            ) : (
+              <Text style={styles.deleteLabel}>Delete listing</Text>
+            )}
+          </Pressable>
+        ) : null}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const TILE = 96;
+
+// Breathing room between the focused field and the keyboard.
+const KEYBOARD_GAP = 40;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

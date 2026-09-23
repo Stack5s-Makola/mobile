@@ -16,13 +16,16 @@ import { ListingFormScreen } from "@screens/seller/ListingFormScreen";
 import { SellerVerificationScreen } from "@screens/seller/SellerVerificationScreen";
 import { SellerProfileScreen } from "@screens/seller/SellerProfileScreen";
 import { BusinessNameScreen } from "@screens/seller/BusinessNameScreen";
+import { PhoneNumberScreen } from "@screens/seller/PhoneNumberScreen";
+import { AddProductScreen } from "@screens/seller/AddProductScreen";
+import { ProductPreviewScreen } from "@screens/seller/ProductPreviewScreen";
 
 // Seller side of the role-based nav skeleton. Tabs: Home, Create, Shop,
 // Profile.
 //
-// "Create" has no screen of its own - it's an action dressed as a tab, so
-// it intercepts the press and pushes the listing form inside the Shop tab's
-// stack. That way Back from the form lands on the listings list.
+// "Create" is an action dressed as a tab: it has no screen of its own, it
+// intercepts the press and pushes AddProduct ABOVE the tabs, so the form
+// isn't sitting under the floating tab bar.
 //
 // Shop has depth (list -> create/edit form), so it gets a nested stack.
 // ShopDetails and Verification are full screens above the tabs, reached
@@ -42,17 +45,17 @@ function ListingsNavigator() {
   );
 }
 
+// Never actually rendered: the Create tab always prevents its own press.
+function CreatePlaceholder() {
+  return <View />;
+}
+
 const TAB_ICONS: Record<keyof SellerTabParamList, typeof Home> = {
   Home,
   Create: Plus,
   Shop: Package,
   Profile: User,
 };
-
-// Never actually rendered: the Create tab always prevents its own press.
-function CreatePlaceholder() {
-  return <View />;
-}
 
 function SellerTabs() {
   return (
@@ -71,11 +74,7 @@ function SellerTabs() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate("Shop", {
-              screen: "ListingForm",
-              params: {},
-              initial: false,
-            });
+            navigation.navigate("AddProduct");
           },
         })}
       />
@@ -89,7 +88,10 @@ export function SellerNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SellerTabs" component={SellerTabs} />
+      <Stack.Screen name="AddProduct" component={AddProductScreen} />
+      <Stack.Screen name="ProductPreview" component={ProductPreviewScreen} />
       <Stack.Screen name="BusinessName" component={BusinessNameScreen} />
+      <Stack.Screen name="PhoneNumber" component={PhoneNumberScreen} />
       <Stack.Screen name="ShopDetails" component={SellerShopScreen} />
       <Stack.Screen name="Verification" component={SellerVerificationScreen} />
     </Stack.Navigator>

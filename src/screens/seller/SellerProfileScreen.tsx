@@ -145,8 +145,8 @@ export function SellerProfileScreen({ navigation }: SellerTabProps<"Profile">) {
             label="Business name"
             onPress={() => navigation.navigate("BusinessName")}
           />
-          {/* TODO: neither location nor phone has an editor yet - point these
-              somewhere once one exists. */}
+          {/* TODO: Location has no editor yet - point it somewhere once one
+              exists. */}
           <MenuRow
             icon={<MapPin size={18} color={GREEN} />}
             label="Location"
@@ -155,7 +155,7 @@ export function SellerProfileScreen({ navigation }: SellerTabProps<"Profile">) {
           <MenuRow
             icon={<Phone size={18} color={GREEN} />}
             label="Phone number"
-            onPress={() => {}}
+            onPress={() => navigation.navigate("PhoneNumber")}
             last
           />
         </View>
