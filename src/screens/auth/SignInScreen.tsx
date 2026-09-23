@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";

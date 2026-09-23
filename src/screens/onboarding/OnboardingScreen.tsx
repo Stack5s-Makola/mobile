@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, SafeAreaView, useWindowDimensions } from "react-native";
+import { View, Text, Image, StyleSheet, useWindowDimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
