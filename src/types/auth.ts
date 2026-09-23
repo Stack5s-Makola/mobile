@@ -34,14 +34,22 @@ export interface ResendOtpResult {
   expiresAt: string; // ISO, ~10 minutes out
 }
 
-// Everything the seller typed during sign-up. The backend stores it but
-// returns none of it, so it rides through the OTP screen in nav params to
-// populate the session that the seller dashboard reads.
-export interface SellerProfileDraft {
+// What the user typed during sign-up. The backend returns none of it, so it
+// rides through the OTP screen in nav params to populate the session that
+// the dashboards read. businessName/photoUri are seller-only.
+export interface ProfileDraft {
   fullName: string;
-  businessName: string;
   location: string;
+  businessName?: string;
   photoUri?: string;
+}
+
+// Carried from registration into the OTP screen: a token is issued before
+// the email is verified, so it waits there rather than becoming a session.
+export interface IssuedFromRegister {
+  accessToken: string;
+  userId: string;
+  role: UserRole;
 }
 
 export interface VerifyOtpResult {
@@ -98,11 +106,51 @@ export interface RegisterSellerPayload {
   photoUri?: string;
 }
 
-// Confirmed: a successful registration returns only { saved: true } - no
-// userId and no phone. The follow-up OTP step therefore has to identify the
-// account by the email the client already collected.
-export interface RegisterSellerResult {
+// What the backend hands back once an account exists. Confirmed live.
+// Note there is no refresh token, and the access token is short-lived.
+export interface IssuedAuth {
+  accessToken: string;
+  expiresIn: string; // e.g. "15m"
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    emailVerified: boolean;
+  };
+}
+
+// Registration issues a token immediately, before the email is verified
+// (user.emailVerified is false at this point). The OTP step still has to
+// pass before the seller is let into the app, so this token is carried
+// through the OTP screen rather than being turned into a session straight
+// away. It does NOT contain the phone or the profile fields, so those are
+// still forwarded separately.
+export interface RegisterSellerResult extends IssuedAuth {
   saved: boolean;
+}
+
+// POST /api/register/buyer. Unlike the seller endpoint there are no profile
+// fields - a buyer's name and location have nowhere to go on the backend, so
+// they're collected for the local session only.
+export interface RegisterBuyerPayload {
+  email: string;
+  phone: string;
+  password: string;
+  role?: UserRole;
+}
+
+// Shape follows the seller endpoint's; `saved` and `expiresIn` are treated
+// as optional until confirmed live (it is localhost-only so far).
+export interface RegisterBuyerResult {
+  accessToken: string;
+  expiresIn?: string;
+  saved?: boolean;
+  user?: {
+    id: string;
+    email: string;
+    role: UserRole;
+    emailVerified: boolean;
+  };
 }
 
 export interface AuthSessionResult {
@@ -118,8 +166,9 @@ export interface AuthSessionResult {
   photoUri?: string;
 }
 
+// POST /api/login keys off email, not phone.
 export interface LoginPayload {
-  phone: string;
+  email: string;
   password: string;
 }
 

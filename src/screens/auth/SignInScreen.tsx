@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, Image, StyleSheet, SafeAreaView } from "react-native";
-import { Phone, Lock } from "lucide-react-native";
+import { Mail, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
@@ -17,16 +17,16 @@ const WORDMARK = "https://www.figma.com/api/mcp/asset/45f68554-0092-45a1-89ec-48
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
   const { showToast } = useToast();
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const canSubmit = phone.length > 0 && password.length > 0;
+  const canSubmit = email.length > 0 && password.length > 0;
 
   async function handleSignIn() {
     setIsLoading(true);
     try {
-      const res = await authService.login({ phone, password });
+      const res = await authService.login({ email, password });
       if (res.success) {
         await login(res.data.accessToken, {
           id: res.data.userId,
@@ -54,12 +54,14 @@ export function SignInScreen({ navigation }: any) {
 
       <View style={styles.form}>
         <AppTextInput
-          label="Phone Number"
-          placeholder="Enter your phone number"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-          icon={<Phone size={20} color={colors.textMuted} />}
+          label="Email address"
+          placeholder="Enter your email address"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={email}
+          onChangeText={setEmail}
+          icon={<Mail size={20} color={colors.textMuted} />}
         />
         <AppTextInput
           label="Password"

@@ -5,14 +5,21 @@ import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
-import { useAuth } from "@context/AuthContext";
-import * as mockAuthService from "@services/mocks/authService";
+import * as apiAuthService from "@services/api/authService";
 
-const authService = mockAuthService;
-
+// Last step before verification. The credentials were collected on the
+// previous screen and are submitted here, mirroring the seller flow.
+//
+// POST /api/register/buyer takes credentials only - a buyer's name and
+// location have nowhere to go on the backend yet, so they're collected for
+// the local session (BuyerProfileTab reads fullName) and carried through
+// the OTP screen.
 export function BuyerProfileSetupScreen({ navigation, route }: any) {
-  const { userId } = route.params as { userId: string };
-  const { login } = useAuth();
+  const { phone, email, password } = route.params as {
+    phone: string;
+    email: string;
+    password: string;
+  };
   const { showToast } = useToast();
   const [fullName, setFullName] = useState("");
   const [location, setLocation] = useState("");
@@ -23,19 +30,27 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
   async function handleContinue() {
     setIsLoading(true);
     try {
-      const res = await authService.completeBuyerProfile({ userId, fullName, location });
+      const res = await apiAuthService.registerBuyer({ email, phone, password });
       if (res.success) {
-        await login(res.data.accessToken, {
-          id: res.data.userId,
-          phone: res.data.phone,
-          email: res.data.email,
-          role: res.data.role,
-          fullName: res.data.fullName,
-          location: res.data.location,
+        showToast(res.message, "success");
+        navigation.navigate("OtpVerify", {
+          email,
+          phone,
+          purpose: "buyerRegister",
+          profile: { fullName: fullName.trim(), location: location.trim() },
+          issued: {
+            accessToken: res.data.accessToken,
+            userId: res.data.user?.id ?? "",
+            role: res.data.user?.role ?? "BUYER",
+          },
         });
       } else {
-        showToast(res.message, "error");
+        // Duplicate email / phone come back as a 409 with a ready-to-show
+        // message and no field-level `errors` map.
+        showToast(res.errors?.email ?? res.errors?.phone ?? res.message, "error");
       }
+    } catch {
+      showToast("Check your connection and try again.", "error");
     } finally {
       setIsLoading(false);
     }

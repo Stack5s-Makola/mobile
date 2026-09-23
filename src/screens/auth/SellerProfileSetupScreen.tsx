@@ -73,6 +73,13 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
           email,
           phone,
           purpose: "sellerRegister",
+          // A token is issued here, but the account isn't verified yet - so
+          // it rides along to the OTP screen instead of becoming a session.
+          issued: {
+            accessToken: res.data.accessToken,
+            userId: res.data.user.id,
+            role: res.data.user.role,
+          },
           profile: {
             fullName: fullName.trim(),
             businessName: businessName.trim(),

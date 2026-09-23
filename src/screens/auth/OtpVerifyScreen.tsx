@@ -12,7 +12,8 @@ import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
-import { SellerProfileDraft } from "@types/auth";
+import { ProfileDraft, IssuedFromRegister } from "@types/auth";
+import { UserRole } from "@types/user";
 import * as mockAuthService from "@services/mocks/authService";
 import * as apiAuthService from "@services/api/authService";
 
@@ -30,13 +31,36 @@ const CODE_LENGTH = 6;
 // running immediately rather than offering a resend the server would reject.
 const RESEND_COOLDOWN_SECONDS = 60;
 
+// Registration already issued a token, so the session can be built even if
+// verify-otp returns nothing. If it does return a fresher token, that one
+// wins - its payload should have emailVerified true. Its exact shape isn't
+// pinned down yet (it can't be probed without a real code from an inbox),
+// hence the tolerant read.
+type IssuedTokens = {
+  accessToken?: string;
+  refreshToken?: string;
+  userId?: string;
+  user?: { id?: string; role?: UserRole };
+};
+
+function readTokens(data: unknown) {
+  const d = (data ?? {}) as IssuedTokens;
+  return {
+    accessToken: d.accessToken,
+    refreshToken: d.refreshToken,
+    userId: d.userId ?? d.user?.id,
+    role: d.user?.role,
+  };
+}
+
 export function OtpVerifyScreen({ navigation, route }: any) {
-  const { userId, phone, email, profile, purpose = "register" } = route.params as {
+  const { userId, phone, email, profile, issued, purpose = "register" } = route.params as {
     userId?: string;
     phone?: string;
     email?: string; // seller flow: the code is emailed, not texted
-    profile?: SellerProfileDraft; // seller flow: what they typed at sign-up
-    purpose?: "register" | "resetPassword" | "sellerRegister";
+    profile?: ProfileDraft; // what they typed at sign-up
+    issued?: IssuedFromRegister; // token + role from registration
+    purpose?: "register" | "resetPassword" | "sellerRegister" | "buyerRegister";
   };
   const { showToast } = useToast();
   const { login } = useAuth();
@@ -104,21 +128,36 @@ export function OtpVerifyScreen({ navigation, route }: any) {
         const res = await apiAuthService.verifyOtp({ email, code });
         if (res.success) {
           showToast(res.message, "success");
-          // TODO(tokens): verify-otp doesn't return an access token yet.
-          // Until it does, the session is built from what we already have so
-          // the seller lands in the app instead of bouncing to sign-in.
-          // Swap in the real token the moment the backend sends one.
-          const issued = res.data as { accessToken?: string; userId?: string } | null;
-          await login(issued?.accessToken ?? "", {
-            id: issued?.userId ?? email,
-            email,
-            phone: phone ?? "",
-            role: "SELLER",
-            fullName: profile?.fullName ?? "",
-            location: profile?.location ?? "",
-            businessName: profile?.businessName,
-            photoUri: profile?.photoUri,
-          });
+          // login() persists this to secure storage, so the seller stays
+          // signed in across app restarts instead of logging in again.
+          // Prefer a token minted by verify-otp (it should carry
+          // emailVerified: true); otherwise keep the one from registration.
+          const verified = readTokens(res.data);
+          const accessToken = verified.accessToken ?? issued?.accessToken ?? "";
+          if (!accessToken) {
+            // Not fatal - they still get into the app - but any authenticated
+            // request will fail, so make it visible rather than silent.
+            console.warn("no access token available after verify-otp", res.data);
+          }
+          await login(
+            accessToken,
+            {
+              // The backend stores the profile but returns none of it, so the
+              // session is built from what was typed at sign-up.
+              id: verified.userId ?? issued?.userId ?? email,
+              email,
+              phone: phone ?? "",
+              // Whatever the backend says, falling back to the role the
+              // account was registered with - this is what decides between
+              // the buyer and seller stacks.
+              role: verified.role ?? issued?.role ?? "BUYER",
+              fullName: profile?.fullName ?? "",
+              location: profile?.location ?? "",
+              businessName: profile?.businessName,
+              photoUri: profile?.photoUri,
+            },
+            verified.refreshToken
+          );
           // No navigation needed - RootNavigator swaps to the seller stack
           // as soon as the session exists.
         } else {

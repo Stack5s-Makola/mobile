@@ -181,16 +181,25 @@ export async function registerSeller(
   return delay({
     success: true,
     message: "Seller profile created. Check your email for a verification code.",
-    data: { saved: true },
+    data: {
+      saved: true,
+      accessToken: `mock-access-${id}`,
+      expiresIn: "15m",
+      user: { id, email: payload.email, role: "SELLER", emailVerified: false },
+    },
   });
 }
 
 export async function login(payload: LoginPayload): Promise<ApiResponse<AuthSessionResult>> {
-  const user = usersByPhone.get(payload.phone);
+  const email = payload.email.trim().toLowerCase();
+  const user = [...usersByPhone.values()].find(
+    (u) => u.email.trim().toLowerCase() === email
+  );
   if (!user || user.password !== payload.password) {
+    // Deliberately vague, matching the real endpoint's 401.
     return delay({
       success: false,
-      message: "Incorrect phone number or password",
+      message: "Invalid email or password",
       data: null as never,
     });
   }

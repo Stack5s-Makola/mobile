@@ -19,6 +19,8 @@ import {
   RegisterSellerResult,
   VerifyEmailOtpPayload,
   ResendOtpResult,
+  RegisterBuyerPayload,
+  RegisterBuyerResult,
 } from "@types/auth";
 
 // // Real backend calls. Same function names/signatures as
@@ -98,8 +100,9 @@ import {
 //   location     <- location         object of { latitude, longitude }
 //   role         <- (constant)       "SELLER"
 //
-// Returns { saved: true } and nothing else - no userId - so the OTP step has
-// to identify the account by email.
+// Returns { saved, accessToken, expiresIn, user } - a token is issued here,
+// before the email is verified, and it expires in 15 minutes. The OTP step
+// identifies the account by email (the response carries no phone).
 //
 // 409s to expect, message only (no `errors` map):
 //   "An account with that phone number already exists"
@@ -122,6 +125,23 @@ export function registerSeller(
       shopName: payload.businessName.trim(),
       location: payload.location,
       role: "SELLER",
+    }),
+  });
+}
+
+// POST /api/register/buyer - creates a buyer account and emails a code.
+// Takes credentials only; there are no profile fields on this endpoint.
+// Like the seller endpoint it issues a token before the email is verified.
+export function registerBuyer(
+  payload: RegisterBuyerPayload
+): Promise<ApiResponse<RegisterBuyerResult>> {
+  return apiRequest("/api/register/buyer", {
+    method: "POST",
+    body: JSON.stringify({
+      email: payload.email.trim(),
+      phone: payload.phone.trim(),
+      password: payload.password,
+      role: "BUYER",
     }),
   });
 }
