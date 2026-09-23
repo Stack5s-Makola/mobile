@@ -20,6 +20,7 @@ export const colors = {
 
 export const fonts = {
   headline: "Sora_600SemiBold",
+  headlineBold: "Sora_700Bold", // heavier headline, for emphasis
   bodyRegular: "Manrope_400Regular",
   bodyMedium: "Manrope_500Medium",
   bodySemiBold: "Manrope_600SemiBold",

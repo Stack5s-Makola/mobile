@@ -69,6 +69,31 @@ export interface SubmitVerificationPayload {
   selfieUri: string;
 }
 
+// GET /api/seller/dashboard - confirmed live. This is the real payload;
+// SellerDashboard below is the older mock-only shape still used by the
+// mock service.
+export type ListingApprovalStatus = "pending" | "approved" | "rejected";
+
+export interface DashboardListing {
+  id: string;
+  name: string;
+  price: number;
+  image: string; // "" when the product has none
+  location: string; // "" when unknown - the row hides it
+  status: ListingApprovalStatus;
+}
+
+export interface SellerDashboardData {
+  name: string;
+  avatar: string | null;
+  shopName: string;
+  totalListings: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  recentListings: DashboardListing[];
+}
+
 export interface SellerDashboard {
   businessName: string;
   verificationStatus: VerificationStatus;

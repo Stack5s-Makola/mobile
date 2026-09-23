@@ -7,11 +7,13 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 //
 // SellerStack
 // ├── SellerTabs (bottom tabs)
-// │   ├── Dashboard
-// │   ├── Shop
-// │   ├── Listings (stack: ListingsHome -> ListingForm)
+// │   ├── Home
+// │   ├── Create   (no screen of its own - tapping it opens the listing form)
+// │   ├── Shop     (stack: ListingsHome -> ListingForm)
 // │   └── Profile
-// └── Verification (full screen, opened from Dashboard banner / Profile)
+// ├── BusinessName (full screen, from the Profile's Business Information list)
+// ├── ShopDetails  (full screen - shop name/photo/categories, from Profile)
+// └── Verification (full screen, opened from Home banner / Profile)
 
 export type ListingsStackParamList = {
   ListingsHome: undefined;
@@ -19,14 +21,16 @@ export type ListingsStackParamList = {
 };
 
 export type SellerTabParamList = {
-  Dashboard: undefined;
-  Shop: undefined;
-  Listings: NavigatorScreenParams<ListingsStackParamList> | undefined;
+  Home: undefined;
+  Create: undefined;
+  Shop: NavigatorScreenParams<ListingsStackParamList> | undefined;
   Profile: undefined;
 };
 
 export type SellerStackParamList = {
   SellerTabs: NavigatorScreenParams<SellerTabParamList> | undefined;
+  BusinessName: undefined;
+  ShopDetails: undefined;
   Verification: undefined;
 };
 

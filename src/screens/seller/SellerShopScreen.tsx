@@ -13,14 +13,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { Camera, Store } from "lucide-react-native";
+import { ArrowLeft, Camera, Store } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { Chip } from "@components/Chip";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { CATEGORIES } from "@constants/categories";
 import { colors, fonts, radii } from "@constants/theme";
 import { useToast } from "@components/Toast";
-import { SellerTabProps } from "@navigation/sellerRoutes";
+import { SellerStackProps } from "@navigation/sellerRoutes";
 import { sellerService } from "@services/sellerService";
 import { Shop, UpdateShopPayload } from "@types/seller";
 import { pickImage } from "@utils/pickImage";
@@ -32,7 +32,7 @@ function toForm(shop: Shop): Form {
   return rest;
 }
 
-export function SellerShopScreen(_props: SellerTabProps<"Shop">) {
+export function SellerShopScreen({ navigation }: SellerStackProps<"ShopDetails">) {
   const { showToast } = useToast();
   const [saved, setSaved] = useState<Form | null>(null);
   const [form, setForm] = useState<Form | null>(null);
@@ -138,6 +138,14 @@ export function SellerShopScreen(_props: SellerTabProps<"Shop">) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.back}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <ArrowLeft size={28} color={colors.text} />
+          </Pressable>
           <Text style={styles.title}>My shop</Text>
           <Text style={styles.subtitle}>This is how buyers see your business.</Text>
 
@@ -256,6 +264,7 @@ const styles = StyleSheet.create({
   },
   error: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.danger, textAlign: "center" },
   content: { padding: 20, paddingBottom: 40, gap: 18 },
+  back: { marginBottom: 4 },
   title: { fontSize: 24, fontFamily: fonts.headline, color: colors.primary },
   subtitle: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted, marginTop: -12 },
   photoSection: { alignItems: "center" },

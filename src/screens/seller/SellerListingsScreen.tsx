@@ -16,6 +16,7 @@ import { Chip } from "@components/Chip";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { SellerListingRow } from "@components/SellerListingRow";
 import { colors, fonts, radii } from "@constants/theme";
+import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
 import { LISTING_STATUS_META } from "@constants/sellerStatus";
 import { ListingsStackProps } from "@navigation/sellerRoutes";
 import { sellerService } from "@services/sellerService";
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 8,
   },
-  listContent: { paddingHorizontal: 20, paddingBottom: 24, flexGrow: 1 },
+  listContent: { paddingHorizontal: 20, paddingBottom: TAB_BAR_CLEARANCE, flexGrow: 1 },
   separator: { height: 10 },
   empty: { alignItems: "center", paddingTop: 48, paddingHorizontal: 12 },
   emptyIcon: {

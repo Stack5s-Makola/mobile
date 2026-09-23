@@ -21,6 +21,7 @@ import { StatusBadge } from "@components/StatusBadge";
 import { CATEGORIES } from "@constants/categories";
 import { LISTING_STATUS_META } from "@constants/sellerStatus";
 import { colors, fonts, radii } from "@constants/theme";
+import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
 import { useToast } from "@components/Toast";
 import { ListingsStackProps } from "@navigation/sellerRoutes";
 import { sellerService } from "@services/sellerService";
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
   },
   topTitle: { fontSize: 18, fontFamily: fonts.headline, color: colors.primary },
   topSpacer: { width: 70, alignItems: "flex-end" },
-  content: { padding: 20, paddingBottom: 40, gap: 20 },
+  content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE, gap: 20 },
   label: { fontSize: 16, fontFamily: fonts.headline, color: colors.text, marginBottom: 4 },
   hint: { fontSize: 13, fontFamily: fonts.bodyRegular, color: colors.textMuted },
   images: { gap: 10, paddingTop: 10 },

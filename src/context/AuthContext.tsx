@@ -14,6 +14,9 @@ type AuthContextValue = {
   setIsOnboarded: (value: boolean) => void;
   login: (accessToken: string, user: User, refreshToken?: string) => Promise<void>;
   setRole: (role: UserRole) => Promise<void>;
+  // Patch fields on the signed-in user and persist them. Local only - there
+  // is no endpoint yet to push profile changes back to the server.
+  updateUser: (patch: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -49,6 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await writeStoredSession(next);
   }
 
+  async function updateUser(patch: Partial<User>) {
+    // Re-read rather than trusting state, so a token rotated mid-edit isn't
+    // overwritten with a stale one.
+    const current = (await readStoredSession()) ?? session;
+    if (!current) return;
+    const next: Session = { ...current, user: { ...current.user, ...patch } };
+    setSession(next);
+    await writeStoredSession(next);
+  }
+
   async function setRole(role: UserRole) {
     if (!session) return;
     const next: Session = { ...session, user: { ...session.user, role } };
@@ -63,7 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, isHydrating, isOnboarded, setIsOnboarded, login, setRole, logout }}
+      value={{
+        session,
+        isHydrating,
+        isOnboarded,
+        setIsOnboarded,
+        login,
+        setRole,
+        updateUser,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useFonts, Sora_600SemiBold } from "@expo-google-fonts/sora";
+import { useFonts, Sora_600SemiBold, Sora_700Bold } from "@expo-google-fonts/sora";
 import {
   Manrope_400Regular,
   Manrope_500Medium,
@@ -16,6 +16,7 @@ import { RootNavigator } from "@navigation/RootNavigator";
 export default function App() {
   const [fontsLoaded] = useFonts({
     Sora_600SemiBold,
+    Sora_700Bold,
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
