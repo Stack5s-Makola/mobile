@@ -111,6 +111,19 @@ export function ProductPreviewScreen({ navigation, route }: SellerStackProps<"Pr
           </View>
         ) : null}
 
+        {tags.length > 0 ? (
+          <View style={styles.block}>
+            <Text style={styles.blockLabel}>Tags</Text>
+            <View style={styles.tags}>
+              {tags.map((tag) => (
+                <View key={tag} style={styles.tag}>
+                  <Text style={styles.tagLabel}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.seller}>
           <View style={styles.avatarBox}>
             {user?.photoUri ? (
@@ -203,6 +216,16 @@ const styles = StyleSheet.create({
   block: { gap: 6 },
   blockLabel: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: GREEN },
   blockBody: { fontSize: 15, fontFamily: fonts.bodyRegular, color: colors.textMuted, lineHeight: 22 },
+
+  // Same chips as the Add Product form, minus the remove affordance.
+  tags: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 2 },
+  tag: {
+    backgroundColor: GREEN,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tagLabel: { fontSize: 13, fontFamily: fonts.bodySemiBold, color: colors.white },
 
   seller: { flexDirection: "row", alignItems: "center", gap: 12 },
   avatarBox: { width: 54, height: 54 },
