@@ -1,6 +1,6 @@
-import { ApiResponse } from "@types/api";
+import { ApiResponse } from "../../types/api";
 import { authedApiRequest } from "./client";
-import { Listing } from "@types/listing";
+import { Listing } from "../../types/listing";
 
 export interface SavedShop {
   id?: string;

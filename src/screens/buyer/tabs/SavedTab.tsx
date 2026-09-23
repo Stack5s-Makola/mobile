@@ -13,7 +13,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Phone, Trash2 } from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "@types/listing";
+import { Listing } from "../../../types/listing";
 import { savedService, SavedShop } from "@services/savedService";
 import { BuyerTabProps } from "@navigation/buyerRoutes";
 
@@ -22,8 +22,10 @@ import { BuyerTabProps } from "@navigation/buyerRoutes";
 
 type Section = "products" | "shops";
 
-export function SavedTab({ navigation }: BuyerTabProps<"Saved">) {
-  const [section, setSection] = useState<Section>("products");
+export function SavedTab({ navigation, route }: BuyerTabProps<"Saved">) {
+  const [section, setSection] = useState<Section>(
+    route.params?.section ?? "products",
+  );
   const [products, setProducts] = useState<Listing[]>([]);
   const [sellers, setSellers] = useState<SavedShop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -164,16 +166,16 @@ export function SavedTab({ navigation }: BuyerTabProps<"Saved">) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontFamily: fonts.headline,
     color: colors.primary,
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 18,
   },
   segmentRow: {
     flexDirection: "row",
     marginHorizontal: 20,
-    marginTop: 16,
+    marginTop: 18,
     backgroundColor: colors.neutralSoft,
     borderRadius: radii.button,
     padding: 4,
@@ -192,7 +194,7 @@ const styles = StyleSheet.create({
   },
   segmentLabelActive: { color: colors.white },
   loading: { marginTop: 40 },
-  listContent: { padding: 12 },
+  listContent: { padding: 14, paddingBottom: 132 },
   empty: {
     textAlign: "center",
     marginTop: 40,
@@ -205,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     backgroundColor: colors.white,
-    borderRadius: radii.card,
+    borderRadius: 8,
     padding: 14,
     marginBottom: 10,
   },

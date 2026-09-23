@@ -18,7 +18,7 @@ import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "@types/listing";
+import { Listing } from "../../../types/listing";
 import { listingService } from "@services/listingService";
 import { BuyerTabProps } from "@navigation/buyerRoutes";
 
@@ -48,13 +48,10 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
     const min = minPrice ? Number(minPrice) : null;
     const max = maxPrice ? Number(maxPrice) : null;
     return listings.filter((l) => {
-      const matchesQuery =
-        query.trim().length === 0 ||
-        l.name.toLowerCase().includes(query.trim().toLowerCase());
       const matchesCategory = !categoryFilter || l.category === categoryFilter;
       const matchesMin = min === null || l.price >= min;
       const matchesMax = max === null || l.price <= max;
-      return matchesQuery && matchesCategory && matchesMin && matchesMax;
+      return matchesCategory && matchesMin && matchesMax;
     });
   }, [listings, query, categoryFilter, minPrice, maxPrice]);
 
@@ -182,7 +179,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    padding: 16,
+    padding: 14,
   },
   searchBar: {
     flex: 1,
@@ -190,7 +187,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     backgroundColor: colors.white,
-    borderRadius: radii.button,
+    borderRadius: 10,
     paddingHorizontal: 16,
     height: 48,
   },
@@ -203,7 +200,7 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 10,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
@@ -235,7 +232,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   loading: { marginTop: 40 },
-  listContent: { padding: 12 },
+  listContent: { padding: 14, paddingBottom: 132 },
   empty: {
     textAlign: "center",
     marginTop: 40,

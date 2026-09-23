@@ -1,11 +1,7 @@
-import { ApiResponse } from "@types/api";
-import { Listing } from "@types/listing";
+import { ApiResponse } from "../../types/api";
+import { Listing } from "../../types/listing";
 import { apiRequest } from "./client";
 
-// Real backend calls. Served under /api/products (not /api/listings -
-// confirmed with the backend dev). Same function names/signatures as
-// src/services/mocks/listingService.ts.
-//
 // The wire shape is NOT the app's Listing, so everything is normalized here
 // rather than cast and hoped for:
 //   - price arrives as a string ("150"), because Postgres numerics serialize
@@ -65,17 +61,52 @@ function mapList(res: ApiResponse<ApiProduct[]>): ApiResponse<Listing[]> {
   };
 }
 
-export async function getListings(): Promise<ApiResponse<Listing[]>> {
-  return mapList(await apiRequest<ApiProduct[]>("/api/products"));
+export interface ProductFilters {
+  category?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusKm?: number;
 }
 
-export async function getListingById(id: string): Promise<ApiResponse<Listing | null>> {
-  const res = await apiRequest<ApiProduct | null>(`/api/products/${id}`);
+export async function getListings(
+  filters: ProductFilters = {},
+): Promise<ApiResponse<Listing[]>> {
+  const params = new URLSearchParams();
+  if (filters.category) params.set("category", filters.category);
+  if (filters.latitude !== undefined)
+    params.set("latitude", String(filters.latitude));
+  if (filters.longitude !== undefined)
+    params.set("longitude", String(filters.longitude));
+  if (filters.radiusKm !== undefined)
+    params.set("radiusKm", String(filters.radiusKm));
+  const query = params.toString();
+  return mapList(
+    await apiRequest<ApiProduct[]>(
+      `/buyer/products${query ? `?${query}` : ""}`,
+    ),
+  );
+}
+
+export async function searchListings(
+  query: string,
+): Promise<ApiResponse<Listing[]>> {
+  const res = await apiRequest<ApiProduct[]>(
+    `/buyer/products/search?q=${encodeURIComponent(query.trim())}`,
+  );
+  return mapList(res);
+}
+
+export async function getListingById(
+  id: string,
+): Promise<ApiResponse<Listing | null>> {
+  const res = await apiRequest<ApiProduct | null>(
+    `/buyer/products/${encodeURIComponent(id)}`,
+  );
   return { ...res, data: res.success && res.data ? toListing(res.data) : null };
 }
 
 export async function getListingsByCategory(
-  categoryId: string
+  categoryId: string,
 ): Promise<ApiResponse<Listing[]>> {
-  return mapList(await apiRequest<ApiProduct[]>(`/api/products?categoryId=${categoryId}`));
+  return getListings({ category: categoryId });
 }

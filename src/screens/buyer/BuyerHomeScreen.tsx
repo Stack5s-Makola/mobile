@@ -15,7 +15,7 @@ import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "@types/listing";
+import { Listing } from "../../types/listing";
 import { listingService } from "@services/listingService";
 
 export function BuyerHomeScreen({ navigation }: any) {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.background,
   },
-  listContent: { padding: 12, paddingBottom: 100 },
+  listContent: { padding: 14, paddingBottom: 132 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -202,10 +202,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionHeader: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: fonts.headline,
     color: colors.primary,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   viewAll: {
     fontSize: 13,

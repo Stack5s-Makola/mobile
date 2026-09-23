@@ -1,4 +1,7 @@
-import { NavigatorScreenParams, CompositeScreenProps } from "@react-navigation/native";
+import {
+  NavigatorScreenParams,
+  CompositeScreenProps,
+} from "@react-navigation/native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
@@ -18,7 +21,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 export type BuyerTabParamList = {
   Home: undefined;
   Search: undefined;
-  Saved: undefined;
+  Saved: { section?: "products" | "shops" } | undefined;
   Profile: undefined;
 };
 
@@ -28,12 +31,11 @@ export type BuyerStackParamList = {
   ProductDetails: { listingId: string };
 };
 
-export type BuyerStackProps<T extends keyof BuyerStackParamList> = NativeStackScreenProps<
-  BuyerStackParamList,
-  T
->;
+export type BuyerStackProps<T extends keyof BuyerStackParamList> =
+  NativeStackScreenProps<BuyerStackParamList, T>;
 
-export type BuyerTabProps<T extends keyof BuyerTabParamList> = CompositeScreenProps<
-  BottomTabScreenProps<BuyerTabParamList, T>,
-  NativeStackScreenProps<BuyerStackParamList>
->;
+export type BuyerTabProps<T extends keyof BuyerTabParamList> =
+  CompositeScreenProps<
+    BottomTabScreenProps<BuyerTabParamList, T>,
+    NativeStackScreenProps<BuyerStackParamList>
+  >;

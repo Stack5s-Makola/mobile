@@ -11,6 +11,7 @@ export interface BuyerPersonalDetails extends BuyerProfile {
   id?: string;
   email?: string;
   phone?: string;
+  location?: string;
   role?: string;
 }
 
@@ -41,5 +42,34 @@ export function updateProfile(
     "/buyer/my-profile",
     body,
     "PATCH",
+  );
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export function updatePersonalDetails(
+  payload: Partial<BuyerPersonalDetails>,
+): Promise<ApiResponse<BuyerPersonalDetails>> {
+  return authedApiRequest<BuyerPersonalDetails>(
+    "/buyer/my-profile/personal-details",
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function changePassword(
+  payload: ChangePasswordPayload,
+): Promise<ApiResponse<{ success: boolean }>> {
+  return authedApiRequest<{ success: boolean }>(
+    "/buyer/my-profile/change-password",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
   );
 }

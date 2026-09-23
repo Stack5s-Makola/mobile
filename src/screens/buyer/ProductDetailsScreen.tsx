@@ -22,7 +22,7 @@ import {
 } from "lucide-react-native";
 import { StatusBadge } from "@components/StatusBadge";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "@types/listing";
+import { Listing } from "../../types/listing";
 import { getCategoryLabel } from "@constants/categories";
 import { listingService } from "@services/listingService";
 import { savedService } from "@services/savedService";
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   notFound: { fontFamily: fonts.bodyMedium, color: colors.textMuted },
-  content: { paddingBottom: 100 },
+  content: { paddingBottom: 132 },
   flex: { flex: 1 },
   imageWrapper: { position: "relative" },
   image: { width: "100%", aspectRatio: 1, backgroundColor: colors.neutralSoft },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  body: { padding: 20, gap: 4 },
+  body: { padding: 18, gap: 4 },
   category: {
     fontSize: 13,
     fontFamily: fonts.bodyMedium,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     backgroundColor: colors.white,
-    borderRadius: radii.card,
+    borderRadius: 8,
     padding: 14,
     marginTop: 20,
   },
