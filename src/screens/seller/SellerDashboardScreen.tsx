@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { MapPin, MoreVertical, Plus } from "lucide-react-native";
+import { Bell, MapPin, MoreVertical, Plus } from "lucide-react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { colors, fonts, radii } from "@constants/theme";
 import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
@@ -134,6 +134,16 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
           <Text style={styles.shopName} numberOfLines={2}>
             {shopName}
           </Text>
+          {/* TODO: no notifications screen yet - wire this up once there is
+              one to open. */}
+          <Pressable
+            onPress={() => {}}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Bell size={24} color={colors.text} />
+          </Pressable>
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -247,12 +257,12 @@ function ListingRow({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.white },
   loading: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE, gap: 16 },
 
