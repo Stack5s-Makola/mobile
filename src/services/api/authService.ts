@@ -14,7 +14,14 @@ import {
 } from "@types/auth";
 import { UserRole } from "@types/user";
 import { apiRequest } from "./client";
-import { RegisterSellerPayload, RegisterSellerResult } from "@types/auth";
+import {
+  RegisterSellerPayload,
+  RegisterSellerResult,
+  VerifyEmailOtpPayload,
+  ResendOtpResult,
+  RegisterBuyerPayload,
+  RegisterBuyerResult,
+} from "@types/auth";
 
 // // Real backend calls. Same function names/signatures as
 // // src/services/mocks/authService.ts on purpose - swap the import in each
@@ -81,33 +88,89 @@ import { RegisterSellerPayload, RegisterSellerResult } from "@types/auth";
 // }
 
 
+// POST /api/register/set-seller-profile - creates the account AND emails a
+// 6-digit code, in one call. Contract confirmed by probing the live backend:
+//
+//   wire field   <- our field        notes
+//   email        <- email
+//   phone        <- phone            9-15 digits, optional leading +
+//   password     <- password         min 8 characters
+//   name         <- fullName         max 120 chars
+//   shopName     <- businessName     max 120 chars, must be globally unique
+//   location     <- location         object of { latitude, longitude }
+//   role         <- (constant)       "SELLER"
+//
+// Returns { saved, accessToken, expiresIn, user } - a token is issued here,
+// before the email is verified, and it expires in 15 minutes. The OTP step
+// identifies the account by email (the response carries no phone).
+//
+// 409s to expect, message only (no `errors` map):
+//   "An account with that phone number already exists"
+//   "An account with this email already exists"
+//   "That shop name is already taken"
+//
+// NOTE: photoUri is absent from the contract. The endpoint accepts the
+// request without it and ignores it if sent, so the seller's photo is not
+// uploaded yet.
+export function registerSeller(
+  payload: RegisterSellerPayload
+): Promise<ApiResponse<RegisterSellerResult>> {
+  return apiRequest("/api/register/set-seller-profile", {
+    method: "POST",
+    body: JSON.stringify({
+      email: payload.email.trim(),
+      phone: payload.phone.trim(),
+      password: payload.password,
+      name: payload.fullName.trim(),
+      shopName: payload.businessName.trim(),
+      location: payload.location,
+      role: "SELLER",
+    }),
+  });
+}
 
+// POST /api/register/buyer - creates a buyer account and emails a code.
+// Takes credentials only; there are no profile fields on this endpoint.
+// Like the seller endpoint it issues a token before the email is verified.
+export function registerBuyer(
+  payload: RegisterBuyerPayload
+): Promise<ApiResponse<RegisterBuyerResult>> {
+  return apiRequest("/api/register/buyer", {
+    method: "POST",
+    body: JSON.stringify({
+      email: payload.email.trim(),
+      phone: payload.phone.trim(),
+      password: payload.password,
+      role: "BUYER",
+    }),
+  });
+}
 
-export const sendData = async (payload: any) => {
-  try {
-    const response = await fetch(
-      "https://makola-backend-r9wy.onrender.com/api/register/seller",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
+// POST /api/verify-otp - checks the 6-digit code that was emailed.
+//
+// Failure messages are already user-facing, so screens can show res.message
+// as-is; a malformed code comes back under errors.code instead.
+//
+// The success payload isn't pinned down yet (it can't be probed without a
+// real code from an inbox), so the result is left as unknown - the screen
+// only branches on res.success today.
+export function verifyOtp(
+  payload: VerifyEmailOtpPayload
+): Promise<ApiResponse<unknown>> {
+  return apiRequest("/api/verify-otp", {
+    method: "POST",
+    body: JSON.stringify({ email: payload.email.trim(), code: payload.code }),
+  });
+}
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data?.message || `Request failed with status ${response.status}`
-      );
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error sending data to backend:", error);
-    throw error;
-  }
-};
+// POST /api/verify-otp/resend - sends a fresh code to an email address.
+//
+//   200 { email, expiresAt }
+//   400 "Please wait 56 seconds before requesting another code"  (throttled)
+//   400 { errors: { email: "Please provide a valid email address" } }
+export function resendOtp(email: string): Promise<ApiResponse<ResendOtpResult>> {
+  return apiRequest("/api/verify-otp/resend", {
+    method: "POST",
+    body: JSON.stringify({ email: email.trim() }),
+  });
+}

@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, SafeAreaView } from "react-native";
 import { ArrowLeft, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import * as mockAuthService from "@services/mocks/authService";
 
 const authService = mockAuthService;
 
 export function CreateNewPasswordScreen({ navigation, route }: any) {
   const { userId } = route.params as { userId: string };
+  const { showToast } = useToast();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -18,18 +20,17 @@ export function CreateNewPasswordScreen({ navigation, route }: any) {
 
   async function handleReset() {
     if (password !== confirmPassword) {
-      Alert.alert("Passwords don't match", "Please re-enter your new password.");
+      showToast("Passwords don't match. Please re-enter your new password.", "error");
       return;
     }
     setIsLoading(true);
     try {
       const res = await authService.resetPassword({ userId, newPassword: password });
       if (res.success) {
-        Alert.alert("Password updated", "You can now sign in with your new password.", [
-          { text: "OK", onPress: () => navigation.navigate("SignIn") },
-        ]);
+        showToast("Password updated. You can now sign in with your new password.", "success");
+        navigation.navigate("SignIn");
       } else {
-        Alert.alert("Couldn't reset password", "Please try again.");
+        showToast("Couldn't reset password. Please try again.", "error");
       }
     } finally {
       setIsLoading(false);

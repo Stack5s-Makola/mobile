@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, SafeAreaView, Alert } from "react-native";
-import { Phone, Lock } from "lucide-react-native";
+import { View, Text, Image, StyleSheet, SafeAreaView } from "react-native";
+import { Mail, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
 import * as mockAuthService from "@services/mocks/authService";
 
@@ -15,16 +16,17 @@ const WORDMARK = "https://www.figma.com/api/mcp/asset/45f68554-0092-45a1-89ec-48
 
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
-  const [phone, setPhone] = useState("");
+  const { showToast } = useToast();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const canSubmit = phone.length > 0 && password.length > 0;
+  const canSubmit = email.length > 0 && password.length > 0;
 
   async function handleSignIn() {
     setIsLoading(true);
     try {
-      const res = await authService.login({ phone, password });
+      const res = await authService.login({ email, password });
       if (res.success) {
         await login(res.data.accessToken, {
           id: res.data.userId,
@@ -37,7 +39,7 @@ export function SignInScreen({ navigation }: any) {
           photoUri: res.data.photoUri,
         });
       } else {
-        Alert.alert("Couldn't sign in", res.message);
+        showToast(res.message, "error");
       }
     } finally {
       setIsLoading(false);
@@ -52,12 +54,14 @@ export function SignInScreen({ navigation }: any) {
 
       <View style={styles.form}>
         <AppTextInput
-          label="Phone Number"
-          placeholder="Enter your phone number"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-          icon={<Phone size={20} color={colors.textMuted} />}
+          label="Email address"
+          placeholder="Enter your email address"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={email}
+          onChangeText={setEmail}
+          icon={<Mail size={20} color={colors.textMuted} />}
         />
         <AppTextInput
           label="Password"
@@ -76,7 +80,7 @@ export function SignInScreen({ navigation }: any) {
         <PrimaryButton label="Sign In" onPress={handleSignIn} disabled={!canSubmit} loading={isLoading} />
         <Text style={styles.footerText}>
           Don&apos;t have an account?{" "}
-          <Text style={styles.link} onPress={() => navigation.navigate("Register")}>
+          <Text style={styles.link} onPress={() => navigation.navigate("RoleSelection")}>
             Sign Up
           </Text>
         </Text>

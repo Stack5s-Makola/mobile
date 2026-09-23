@@ -1,14 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import * as SecureStore from "expo-secure-store";
 import { User, UserRole } from "@types/user";
-import { SESSION_KEY, Session } from "@services/session";
+import {
+  Session,
+  readStoredSession,
+  writeStoredSession,
+  clearStoredSession,
+} from "@services/session";
 
 type AuthContextValue = {
   session: Session | null;
   isHydrating: boolean; // true while checking secure-store on launch
   isOnboarded: boolean;
   setIsOnboarded: (value: boolean) => void;
-  login: (accessToken: string, user: User) => Promise<void>;
+  login: (accessToken: string, user: User, refreshToken?: string) => Promise<void>;
   setRole: (role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -25,9 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const stored = await SecureStore.getItemAsync(SESSION_KEY);
+        const stored = await readStoredSession();
         if (stored) {
-          setSession(JSON.parse(stored) as Session);
+          setSession(stored);
           setIsOnboarded(true); // returning user, skip onboarding
         }
       } catch (err) {
@@ -38,22 +42,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  async function login(accessToken: string, user: User) {
-    const next: Session = { accessToken, user };
+  async function login(accessToken: string, user: User, refreshToken?: string) {
+    const next: Session = { accessToken, refreshToken, user };
     setSession(next);
-    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(next));
+    // Persisted here, so closing the app doesn't sign them out.
+    await writeStoredSession(next);
   }
 
   async function setRole(role: UserRole) {
     if (!session) return;
     const next: Session = { ...session, user: { ...session.user, role } };
     setSession(next);
-    await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(next));
+    await writeStoredSession(next);
   }
 
   async function logout() {
     setSession(null);
-    await SecureStore.deleteItemAsync(SESSION_KEY);
+    await clearStoredSession();
   }
 
   return (

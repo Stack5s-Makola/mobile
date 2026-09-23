@@ -25,7 +25,7 @@ export function OnboardingScreen({ navigation }: any) {
 
   function handleGetStarted() {
     setIsOnboarded(true);
-    navigation.navigate("Register");
+    navigation.navigate("RoleSelection");
   }
 
   function handleSignIn() {

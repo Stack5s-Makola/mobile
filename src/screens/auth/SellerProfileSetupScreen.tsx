@@ -1,25 +1,33 @@
 import React, { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, SafeAreaView, Alert } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet, SafeAreaView } from "react-native";
 import { ArrowLeft, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import * as apiAuthService from "@services/api/authService";
 
 // This screen calls the REAL backend directly (not the authService
-// swap-point) because only THIS endpoint is confirmed live by Daniel -
-// login/verify-otp/etc. aren't necessarily ready, so flipping the whole
-// swap-point would break those. Revisit once more of Priority 2 lands.
+// swap-point) because only THIS endpoint is confirmed live -
+// login/verify-otp/etc. are still 404, so flipping the whole swap-point
+// would break those.
 //
-// CONFIRMED: POST /api/register/set-seller-profile creates the account
-// and triggers the OTP email in one call (Daniel).
-// UNCONFIRMED (best guess, flagged in src/types/auth.ts): exact request
-// body field names, and the response shape / what identifier to carry
-// into OtpVerifyScreen.
+// VERIFIED against the live backend: POST /api/register/set-seller-profile
+// creates the account and emails the OTP in one call, and returns only
+// { saved: true } - no userId - so the OTP screen is handed the email and
+// phone we already collected here.
+//
+// TODO(location): the backend requires GPS coordinates and rejects a plain
+// string. Until Google Maps / device location is wired up, the typed
+// location is sent as location.address (extra keys are accepted) alongside
+// the placeholder coordinates below. Replace these with real ones then -
+// nothing else about this call needs to change.
+const PLACEHOLDER_COORDINATES = { latitude: 5.6037, longitude: -0.187 }; // Accra
 
 export function SellerProfileSetupScreen({ navigation, route }: any) {
   const { phone, email, password } = route.params as { phone: string; email: string; password: string };
+  const { showToast } = useToast();
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [location, setLocation] = useState("");
@@ -31,7 +39,7 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
   async function handlePickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo library access to upload a profile photo.");
+      showToast("Allow photo library access to upload a profile photo.", "error");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -54,20 +62,38 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
         password,
         fullName,
         businessName,
-        location,
+        location: { ...PLACEHOLDER_COORDINATES, address: location.trim() },
         photoUri,
       });
       if (res.success) {
+        showToast(res.message, "success");
+        // The backend returns none of this back, so carry it forward - the
+        // OTP screen uses it to build the session the seller lands in.
         navigation.navigate("OtpVerify", {
-          userId: res.data.userId,
-          phone: res.data.phone,
+          email,
+          phone,
           purpose: "sellerRegister",
+          // A token is issued here, but the account isn't verified yet - so
+          // it rides along to the OTP screen instead of becoming a session.
+          issued: {
+            accessToken: res.data.accessToken,
+            userId: res.data.user.id,
+            role: res.data.user.role,
+          },
+          profile: {
+            fullName: fullName.trim(),
+            businessName: businessName.trim(),
+            location: location.trim(),
+            photoUri,
+          },
         });
       } else {
-        Alert.alert("Couldn't create account", res.message);
+        // Duplicate email / phone / shop name come back as a 409 with a
+        // ready-to-show message and no field-level `errors` map.
+        showToast(res.message, "error");
       }
     } catch {
-      Alert.alert("Couldn't create account", "Check your connection and try again.");
+      showToast("Check your connection and try again.", "error");
     } finally {
       setIsLoading(false);
     }

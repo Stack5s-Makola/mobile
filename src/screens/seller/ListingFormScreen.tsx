@@ -21,6 +21,7 @@ import { StatusBadge } from "@components/StatusBadge";
 import { CATEGORIES } from "@constants/categories";
 import { LISTING_STATUS_META } from "@constants/sellerStatus";
 import { colors, fonts, radii } from "@constants/theme";
+import { useToast } from "@components/Toast";
 import { ListingsStackProps } from "@navigation/sellerRoutes";
 import { sellerService } from "@services/sellerService";
 import { ListingPayload, SellerListing } from "@types/seller";
@@ -33,6 +34,7 @@ export function ListingFormScreen({ navigation, route }: ListingsStackProps<"Lis
   const listingId = route.params?.listingId;
   const isEdit = Boolean(listingId);
 
+  const { showToast } = useToast();
   const [existing, setExisting] = useState<SellerListing | null>(null);
   const [isLoadingExisting, setIsLoadingExisting] = useState(isEdit);
   const [images, setImages] = useState<string[]>([]);
@@ -63,9 +65,8 @@ export function ListingFormScreen({ navigation, route }: ListingsStackProps<"Lis
           setCategory(l.category);
           setIsPublished(l.status !== "DRAFT");
         } else {
-          Alert.alert("Couldn't load listing", res.message, [
-            { text: "OK", onPress: () => navigation.goBack() },
-          ]);
+          showToast(res.message, "error");
+          navigation.goBack();
         }
       } finally {
         if (!cancelled) setIsLoadingExisting(false);
@@ -119,10 +120,10 @@ export function ListingFormScreen({ navigation, route }: ListingsStackProps<"Lis
       if (res.success) {
         navigation.goBack();
       } else {
-        Alert.alert("Couldn't save listing", res.message);
+        showToast(res.message, "error");
       }
     } catch {
-      Alert.alert("Couldn't save listing", "Check your connection and try again.");
+      showToast("Check your connection and try again.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -142,7 +143,7 @@ export function ListingFormScreen({ navigation, route }: ListingsStackProps<"Lis
             if (res.success) {
               navigation.goBack();
             } else {
-              Alert.alert("Couldn't delete listing", res.message);
+              showToast(res.message, "error");
             }
           } finally {
             setIsDeleting(false);
