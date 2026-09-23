@@ -1,7 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search as SearchIcon, SlidersHorizontal, X } from "lucide-react-native";
+import {
+  Search as SearchIcon,
+  SlidersHorizontal,
+  X,
+} from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
@@ -12,8 +24,6 @@ import { BuyerTabProps } from "@navigation/buyerRoutes";
 
 // NOTE: built against our data model/theme - Search wasn't in the Figma
 // frames pulled before the rate limit hit. Refine once that resets.
-// Filtering is client-side over the mock dataset for now.
-
 export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
   const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -24,17 +34,23 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    listingService.getListings().then((res) => {
+    const trimmedQuery = query.trim();
+    const request = trimmedQuery
+      ? listingService.searchListings(trimmedQuery)
+      : listingService.getListings();
+    request.then((res) => {
       if (res.success) setListings(res.data);
       setIsLoading(false);
     });
-  }, []);
+  }, [query]);
 
   const results = useMemo(() => {
     const min = minPrice ? Number(minPrice) : null;
     const max = maxPrice ? Number(maxPrice) : null;
     return listings.filter((l) => {
-      const matchesQuery = query.trim().length === 0 || l.name.toLowerCase().includes(query.trim().toLowerCase());
+      const matchesQuery =
+        query.trim().length === 0 ||
+        l.name.toLowerCase().includes(query.trim().toLowerCase());
       const matchesCategory = !categoryFilter || l.category === categoryFilter;
       const matchesMin = min === null || l.price >= min;
       const matchesMax = max === null || l.price <= max;
@@ -42,7 +58,8 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
     });
   }, [listings, query, categoryFilter, minPrice, maxPrice]);
 
-  const hasActiveFilters = categoryFilter !== null || minPrice !== "" || maxPrice !== "";
+  const hasActiveFilters =
+    categoryFilter !== null || minPrice !== "" || maxPrice !== "";
 
   function clearFilters() {
     setCategoryFilter(null);
@@ -69,10 +86,16 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
           ) : null}
         </View>
         <Pressable
-          style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
+          style={[
+            styles.filterButton,
+            hasActiveFilters && styles.filterButtonActive,
+          ]}
           onPress={() => setShowFilters(!showFilters)}
         >
-          <SlidersHorizontal size={18} color={hasActiveFilters ? colors.white : colors.primary} />
+          <SlidersHorizontal
+            size={18}
+            color={hasActiveFilters ? colors.white : colors.primary}
+          />
         </Pressable>
       </View>
 
@@ -86,7 +109,9 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
                 label={cat.label}
                 icon={cat.icon}
                 active={categoryFilter === cat.id}
-                onPress={() => setCategoryFilter(categoryFilter === cat.id ? null : cat.id)}
+                onPress={() =>
+                  setCategoryFilter(categoryFilter === cat.id ? null : cat.id)
+                }
               />
             ))}
           </View>
@@ -117,7 +142,11 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
       ) : null}
 
       {isLoading ? (
-        <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+          style={styles.loading}
+        />
       ) : (
         <FlatList
           data={results}
@@ -126,13 +155,19 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {query || hasActiveFilters ? "No matches. Try different terms or filters." : "Start typing to search."}
+              {query || hasActiveFilters
+                ? "No matches. Try different terms or filters."
+                : "Start typing to search."}
             </Text>
           }
           renderItem={({ item }) => (
             <ProductCard
               listing={item}
-              onPress={() => navigation.getParent()?.navigate("ProductDetails", { listingId: item.id })}
+              onPress={() =>
+                navigation
+                  .getParent()
+                  ?.navigate("ProductDetails", { listingId: item.id })
+              }
             />
           )}
         />
@@ -143,7 +178,12 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 16 },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 16,
+  },
   searchBar: {
     flex: 1,
     flexDirection: "row",
@@ -154,7 +194,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 48,
   },
-  searchInput: { flex: 1, fontSize: 13, fontFamily: fonts.bodyRegular, color: colors.text },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+  },
   filterButton: {
     width: 48,
     height: 48,
@@ -165,7 +210,12 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: { backgroundColor: colors.primary },
   filterPanel: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
-  filterLabel: { fontSize: 13, fontFamily: fonts.bodySemiBold, color: colors.primary, marginTop: 4 },
+  filterLabel: {
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.primary,
+    marginTop: 4,
+  },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
   priceRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   priceInput: {
@@ -178,8 +228,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   priceDash: { color: colors.textMuted },
-  clearFilters: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.danger, marginTop: 4 },
+  clearFilters: {
+    fontSize: 13,
+    fontFamily: fonts.bodyMedium,
+    color: colors.danger,
+    marginTop: 4,
+  },
   loading: { marginTop: 40 },
   listContent: { padding: 12 },
-  empty: { textAlign: "center", marginTop: 40, fontFamily: fonts.bodyRegular, color: colors.textMuted, paddingHorizontal: 24 },
+  empty: {
+    textAlign: "center",
+    marginTop: 40,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+    paddingHorizontal: 24,
+  },
 });
