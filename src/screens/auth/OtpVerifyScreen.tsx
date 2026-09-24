@@ -5,8 +5,11 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
@@ -54,7 +57,14 @@ function readTokens(data: unknown) {
 }
 
 export function OtpVerifyScreen({ navigation, route }: any) {
-  const { userId, phone, email, profile, issued, purpose = "register" } = route.params as {
+  const {
+    userId,
+    phone,
+    email,
+    profile,
+    issued,
+    purpose = "register",
+  } = route.params as {
     userId?: string;
     phone?: string;
     email?: string; // seller flow: the code is emailed, not texted
@@ -137,7 +147,10 @@ export function OtpVerifyScreen({ navigation, route }: any) {
           if (!accessToken) {
             // Not fatal - they still get into the app - but any authenticated
             // request will fail, so make it visible rather than silent.
-            console.warn("no access token available after verify-otp", res.data);
+            console.warn(
+              "no access token available after verify-otp",
+              res.data,
+            );
           }
           await login(
             accessToken,
@@ -158,7 +171,7 @@ export function OtpVerifyScreen({ navigation, route }: any) {
               businessName: profile?.businessName,
               photoUri: profile?.photoUri,
             },
-            verified.refreshToken
+            verified.refreshToken,
           );
           // No navigation needed - RootNavigator swaps to the seller stack
           // as soon as the session exists.
@@ -175,7 +188,10 @@ export function OtpVerifyScreen({ navigation, route }: any) {
       // Only the mock-backed flows reach here, and both are entered with a
       // userId; the seller flow returned above.
       if (!userId) {
-        showToast("Something went wrong. Please start the sign-up again.", "error");
+        showToast(
+          "Something went wrong. Please start the sign-up again.",
+          "error",
+        );
         return;
       }
 
@@ -198,67 +214,107 @@ export function OtpVerifyScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-        <ArrowLeft size={28} color={colors.text} />
-      </Pressable>
-      <Text style={styles.title}>Verify your {email ? "email" : "number"}</Text>
-      <Text style={styles.subtitle}>We&apos;ve sent a 6-digit code to {email ?? phone}.</Text>
-
-      <View style={styles.codeRow}>
-        {digits.map((digit, i) => (
-          <TextInput
-            key={i}
-            ref={(ref) => (inputs.current[i] = ref)}
-            style={styles.codeBox}
-            value={digit}
-            onChangeText={(text) => handleChange(text, i)}
-            onKeyPress={(e) => handleKeyPress(e, i)}
-            keyboardType="number-pad"
-            maxLength={1}
-            textAlign="center"
-          />
-        ))}
-      </View>
-
-      <Pressable
-        onPress={handleResend}
-        disabled={cooldown > 0 || isResending}
-        style={styles.resend}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text
-          style={[
-            styles.resendText,
-            (cooldown > 0 || isResending) && styles.resendDisabled,
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
-          {isResending
-            ? "Sending..."
-            : cooldown > 0
-              ? `Resend OTP verification in ${cooldown}s`
-              : "Resend OTP verification"}
-        </Text>
-      </Pressable>
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <ArrowLeft size={28} color={colors.text} />
+          </Pressable>
+          <Text style={styles.title}>
+            Verify your {email ? "email" : "number"}
+          </Text>
+          <Text style={styles.subtitle}>
+            We&apos;ve sent a 6-digit code to {email ?? phone}.
+          </Text>
 
-      <View style={styles.footer}>
-        <PrimaryButton
-          label="Verify OTP"
-          onPress={handleVerify}
-          disabled={!canSubmit}
-          loading={isLoading}
-        />
-      </View>
+          <View style={styles.codeRow}>
+            {digits.map((digit, i) => (
+              <TextInput
+                key={i}
+                ref={(ref) => (inputs.current[i] = ref)}
+                style={styles.codeBox}
+                value={digit}
+                onChangeText={(text) => handleChange(text, i)}
+                onKeyPress={(e) => handleKeyPress(e, i)}
+                keyboardType="number-pad"
+                maxLength={1}
+                textAlign="center"
+              />
+            ))}
+          </View>
+
+          <Pressable
+            onPress={handleResend}
+            disabled={cooldown > 0 || isResending}
+            style={styles.resend}
+          >
+            <Text
+              style={[
+                styles.resendText,
+                (cooldown > 0 || isResending) && styles.resendDisabled,
+              ]}
+            >
+              {isResending
+                ? "Sending..."
+                : cooldown > 0
+                  ? `Resend OTP verification in ${cooldown}s`
+                  : "Resend OTP verification"}
+            </Text>
+          </Pressable>
+
+          <View style={styles.footer}>
+            <PrimaryButton
+              label="Verify OTP"
+              onPress={handleVerify}
+              disabled={!canSubmit}
+              loading={isLoading}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 24, paddingTop: 40 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+    padding: 24,
+    paddingTop: 40,
+  },
+  keyboardAvoidingView: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 16 },
   back: { marginBottom: 24 },
   title: { fontSize: 24, fontFamily: fonts.headline, color: colors.primary },
-  subtitle: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted, marginTop: 8 },
-  codeRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 32 },
-  resend: { marginTop: 20, alignSelf: "center", paddingVertical: 8, paddingHorizontal: 12 },
-  resendText: { fontSize: 14, fontFamily: fonts.bodySemiBold, color: colors.primary },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+    marginTop: 8,
+  },
+  codeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 32,
+  },
+  resend: {
+    marginTop: 20,
+    alignSelf: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  resendText: {
+    fontSize: 14,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.primary,
+  },
   resendDisabled: { color: colors.textMuted, fontFamily: fonts.bodyRegular },
   codeBox: {
     width: 50,

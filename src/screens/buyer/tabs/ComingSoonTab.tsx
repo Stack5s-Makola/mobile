@@ -1,5 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { colors, fonts } from "@constants/theme";
 
 // Generic "coming soon" placeholder so tab bar structure and navigation
 // are testable before each tab is actually built out.
@@ -17,6 +19,15 @@ export function ComingSoonTab({ label }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center" },
-  text: { fontSize: 16, color: "#777" },
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  text: {
+    fontSize: 16,
+    color: colors.textMuted,
+    fontFamily: fonts.bodyRegular,
+  },
 });

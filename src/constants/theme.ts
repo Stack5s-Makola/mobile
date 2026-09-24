@@ -2,14 +2,14 @@
 // Fonts (Sora, Manrope) need to be loaded via expo-font - see App.tsx.
 
 export const colors = {
-  primary: "#01573C", // deep green - buttons, headlines, active states
-  background: "#ECF0EF", // light gray-green screen background
-  text: "#000000",
-  textMuted: "#777777",
+  primary: "#038722",
+  background: "#FFFFFF",
+  text: "#111111",
+  textMuted: "#585858",
   white: "#FFFFFF",
-  border: "#01573C",
-  divider: "#DDE3E1",
-  primarySoft: "#DCEBE5", // tinted fills behind primary icons/badges
+  border: "#038722",
+  divider: "#E3E3E3",
+  primarySoft: "#E2F3E5",
   warning: "#B7791F",
   warningSoft: "#FDF3E1",
   success: "#16A34A", // toast confirmations
@@ -28,6 +28,6 @@ export const fonts = {
 };
 
 export const radii = {
-  button: 20,
-  card: 10,
+  button: 30,
+  card: 30,
 };

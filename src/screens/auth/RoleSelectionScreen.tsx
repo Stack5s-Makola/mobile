@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { CheckCircle2, Circle } from "lucide-react-native";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts, radii } from "@constants/theme";

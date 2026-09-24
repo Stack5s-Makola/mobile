@@ -259,21 +259,23 @@ function Select({
 
       {isOpen ? (
         <View style={styles.options}>
-          {CATEGORIES.map((option) => (
-            <Pressable
-              key={option.id}
-              style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-              onPress={() => {
-                onSelect(option.id);
-                setIsOpen(false);
-              }}
-              accessibilityRole="button"
-            >
-              <Text style={styles.optionLabel}>
-                {option.icon}  {option.label}
-              </Text>
-            </Pressable>
-          ))}
+          {CATEGORIES.map((option) => {
+            const Icon = option.icon;
+            return (
+              <Pressable
+                key={option.id}
+                style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+                onPress={() => {
+                  onSelect(option.id);
+                  setIsOpen(false);
+                }}
+                accessibilityRole="button"
+              >
+                <Icon size={18} color={GREEN} />
+                <Text style={styles.optionLabel}>{option.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
     </View>
@@ -369,7 +371,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     overflow: "hidden",
   },
-  option: { paddingHorizontal: 16, paddingVertical: 14 },
+  option: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   optionPressed: { backgroundColor: colors.background },
   optionLabel: { fontSize: 15, fontFamily: fonts.bodyRegular, color: colors.text },
 

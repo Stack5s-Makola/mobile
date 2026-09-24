@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import * as Location from "expo-location";
 import {
   View,
   Text,
@@ -10,12 +11,12 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, Bell, MapPin, ChevronDown } from "lucide-react-native";
+import { Search, Bell, MapPin } from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "@types/listing";
+import { Listing } from "../../types/listing";
 import { listingService } from "@services/listingService";
 
 export function BuyerHomeScreen({ navigation }: any) {
@@ -23,25 +24,67 @@ export function BuyerHomeScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState("Locating...");
 
-  const loadListings = useCallback(async (isRefresh = false) => {
-    isRefresh ? setIsRefreshing(true) : setIsLoading(true);
-    try {
-      const res = await listingService.getListings();
-      if (res.success) setListings(res.data);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCurrentLocation = async () => {
+      try {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) {
+          if (isMounted) setCurrentLocation("Location unavailable");
+          return;
+        }
+
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const places = await Location.reverseGeocodeAsync({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        const place = places[0];
+        const readableLocation =
+          place?.district ??
+          place?.city ??
+          place?.subregion ??
+          place?.region ??
+          place?.country ??
+          "Location unavailable";
+
+        if (isMounted) setCurrentLocation(readableLocation);
+      } catch {
+        if (isMounted) setCurrentLocation("Location unavailable");
+      }
+    };
+
+    loadCurrentLocation();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  const loadListings = useCallback(
+    async (isRefresh = false) => {
+      isRefresh ? setIsRefreshing(true) : setIsLoading(true);
+      try {
+        const res = await listingService.getListings(
+          activeCategory ? { category: activeCategory } : undefined,
+        );
+        if (res.success) setListings(res.data);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [activeCategory],
+  );
 
   useEffect(() => {
     loadListings();
   }, [loadListings]);
-
-  const visibleListings = activeCategory
-    ? listings.filter((l) => l.category === activeCategory)
-    : listings;
 
   if (isLoading) {
     return (
@@ -54,22 +97,29 @@ export function BuyerHomeScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <FlatList
-        data={visibleListings}
+        data={listings}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadListings(true)} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadListings(true)}
+          />
         }
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {activeCategory ? "No listings in this category yet." : "No listings yet - check back soon."}
+            {activeCategory
+              ? "No listings in this category yet."
+              : "No listings yet - check back soon."}
           </Text>
         }
         renderItem={({ item }) => (
           <ProductCard
             listing={item}
-            onPress={() => navigation.navigate("ProductDetails", { listingId: item.id })}
+            onPress={() =>
+              navigation.navigate("ProductDetails", { listingId: item.id })
+            }
           />
         )}
         ListHeaderComponent={
@@ -77,11 +127,10 @@ export function BuyerHomeScreen({ navigation }: any) {
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.locationLabel}>Current Location</Text>
-                <Pressable style={styles.locationValueRow}>
+                <View style={styles.locationValueRow}>
                   <MapPin size={16} color={colors.primary} />
-                  <Text style={styles.locationValue}>Madina</Text>
-                  <ChevronDown size={16} color={colors.primary} />
-                </Pressable>
+                  <Text style={styles.locationValue}>{currentLocation}</Text>
+                </View>
               </View>
               <Pressable style={styles.bellButton}>
                 <Bell size={20} color={colors.primary} />
@@ -93,7 +142,9 @@ export function BuyerHomeScreen({ navigation }: any) {
               onPress={() => navigation.navigate("Search")}
             >
               <Search size={18} color={colors.textMuted} />
-              <Text style={styles.searchPlaceholder}>Search for sellers beyond your network</Text>
+              <Text style={styles.searchPlaceholder}>
+                Search for sellers beyond your network
+              </Text>
             </Pressable>
 
             <View style={styles.sectionHeaderRow}>
@@ -105,14 +156,20 @@ export function BuyerHomeScreen({ navigation }: any) {
                 View All
               </Text>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipRow}
+            >
               {CATEGORIES.map((cat) => (
                 <CategoryChip
                   key={cat.id}
                   label={cat.label}
                   icon={cat.icon}
                   active={activeCategory === cat.id}
-                  onPress={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
+                  onPress={() =>
+                    setActiveCategory(activeCategory === cat.id ? null : cat.id)
+                  }
                 />
               ))}
             </ScrollView>
@@ -127,21 +184,39 @@ export function BuyerHomeScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  listContent: { padding: 12, paddingBottom: 100 },
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  listContent: { padding: 14, paddingBottom: 132 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
-  locationLabel: { fontSize: 12, fontFamily: fonts.bodyRegular, color: colors.textMuted },
-  locationValueRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  locationValue: { fontSize: 16, fontFamily: fonts.headline, color: colors.primary },
+  locationLabel: {
+    fontSize: 12,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
+  locationValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 2,
+  },
+  locationValue: {
+    fontSize: 16,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+  },
   bellButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.button,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
@@ -150,21 +225,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.white,
+    backgroundColor: colors.neutralSoft,
+    borderWidth: 1,
+    borderColor: colors.divider,
     borderRadius: radii.button,
     paddingHorizontal: 16,
     height: 48,
     marginBottom: 20,
   },
-  searchPlaceholder: { fontSize: 13, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  searchPlaceholder: {
+    fontSize: 13,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
   sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
   },
-  sectionHeader: { fontSize: 16, fontFamily: fonts.headline, color: colors.primary, marginBottom: 10 },
-  viewAll: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.textMuted },
+  sectionHeader: {
+    fontSize: 18,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+    marginBottom: 12,
+  },
+  viewAll: {
+    fontSize: 13,
+    fontFamily: fonts.bodyMedium,
+    color: colors.textMuted,
+  },
   chipRow: { marginBottom: 20 },
   empty: {
     textAlign: "center",

@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Mail, Phone, Lock } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
@@ -10,7 +18,8 @@ import { UserRole } from "@types/user";
 // NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days
 // from when it was pulled). Replace with a real exported asset in
 // src/assets once available - see README "Known issues" for context.
-const WORDMARK_URL = "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a8-253f0baf48d0.png";
+const WORDMARK_URL =
+  "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a8-253f0baf48d0.png";
 
 // No backend call here anymore. Per Daniel: nothing is created until the
 // final combined submission on the role-specific profile-setup screen
@@ -32,83 +41,118 @@ export function RegisterScreen({ navigation, route }: any) {
   // 8 is the backend's floor - catching it here avoids filling in the whole
   // profile screen only to be rejected on the final submission.
   const canSubmit =
-    phone.length > 0 && email.length > 0 && password.length >= 8 && password === confirmPassword;
+    phone.length > 0 &&
+    email.length > 0 &&
+    password.length >= 8 &&
+    password === confirmPassword;
 
   function handleContinue() {
     if (password !== confirmPassword) {
-      showToast("Passwords don't match. Please re-enter your password.", "error");
+      showToast(
+        "Passwords don't match. Please re-enter your password.",
+        "error",
+      );
       return;
     }
-    navigation.navigate(role === "SELLER" ? "SellerProfileSetup" : "BuyerProfileSetup", {
-      phone,
-      email,
-      password,
-      role,
-    });
+    navigation.navigate(
+      role === "SELLER" ? "SellerProfileSetup" : "BuyerProfileSetup",
+      {
+        phone,
+        email,
+        password,
+        role,
+      },
+    );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <Image source={{ uri: WORDMARK_URL }} style={styles.wordmark} resizeMode="contain" />
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>
-          {role === "SELLER"
-            ? "Set up your seller account and start listing today."
-            : "Join Makola and start discovering today."}
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        <View style={styles.header}>
+          <Image
+            source={{ uri: WORDMARK_URL }}
+            style={styles.wordmark}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>
+            {role === "SELLER"
+              ? "Set up your seller account and start listing today."
+              : "Join Makola and start discovering today."}
+          </Text>
+        </View>
+
+        <View style={styles.form}>
+          <AppTextInput
+            label="Phone Number"
+            placeholder="Enter your phone number"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            icon={<Phone size={20} color={colors.textMuted} />}
+          />
+          <AppTextInput
+            label="Email address"
+            placeholder="Enter your email address"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            icon={<Mail size={20} color={colors.textMuted} />}
+          />
+          <AppTextInput
+            label="Password"
+            placeholder="At least 8 characters"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            icon={<Lock size={20} color={colors.textMuted} />}
+          />
+          <AppTextInput
+            label="Confirm Password"
+            placeholder="Enter password"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            icon={<Lock size={20} color={colors.textMuted} />}
+          />
+        </View>
+
+        <PrimaryButton
+          label="Continue"
+          onPress={handleContinue}
+          disabled={!canSubmit}
+        />
+
+        <Text style={styles.footer}>
+          Already have an account?{" "}
+          <Text
+            style={styles.link}
+            onPress={() => navigation.navigate("SignIn")}
+          >
+            Sign In
+          </Text>
         </Text>
-      </View>
-
-      <View style={styles.form}>
-        <AppTextInput
-          label="Phone Number"
-          placeholder="Enter your phone number"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-          icon={<Phone size={20} color={colors.textMuted} />}
-        />
-        <AppTextInput
-          label="Email address"
-          placeholder="Enter your email address"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-          icon={<Mail size={20} color={colors.textMuted} />}
-        />
-        <AppTextInput
-          label="Password"
-          placeholder="At least 8 characters"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          icon={<Lock size={20} color={colors.textMuted} />}
-        />
-        <AppTextInput
-          label="Confirm Password"
-          placeholder="Enter password"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          icon={<Lock size={20} color={colors.textMuted} />}
-        />
-      </View>
-
-      <PrimaryButton label="Continue" onPress={handleContinue} disabled={!canSubmit} />
-
-      <Text style={styles.footer}>
-        Already have an account?{" "}
-        <Text style={styles.link} onPress={() => navigation.navigate("SignIn")}>
-          Sign In
-        </Text>
-      </Text>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: colors.background, padding: 24, paddingTop: 60 },
+  keyboardAvoidingView: { flex: 1, backgroundColor: colors.background },
+  container: {
+    flexGrow: 1,
+    backgroundColor: colors.background,
+    padding: 24,
+    paddingTop: 60,
+  },
   header: { alignItems: "center", marginBottom: 24 },
   wordmark: { width: 70, height: 84, marginBottom: 8 },
   title: { fontSize: 28, fontFamily: fonts.headline, color: colors.primary },
