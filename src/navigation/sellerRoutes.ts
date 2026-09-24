@@ -7,11 +7,18 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 //
 // SellerStack
 // ├── SellerTabs (bottom tabs)
-// │   ├── Dashboard
-// │   ├── Shop
-// │   ├── Listings (stack: ListingsHome -> ListingForm)
+// │   ├── Home
+// │   ├── Create   (no screen of its own - tapping it opens AddProduct)
+// │   ├── Listing  (stack: ListingsHome -> ListingForm)
 // │   └── Profile
-// └── Verification (full screen, opened from Dashboard banner / Profile)
+// ├── AddProduct   (full screen above the tabs, from the Create tab)
+// ├── Notifications (full screen, from the dashboard bell)
+// ├── ProductDetails (full screen, from a listing card)
+// ├── ProductPreview (full screen, from AddProduct)
+// ├── BusinessName (full screen, from the Profile's Business Information list)
+// ├── PhoneNumber  (full screen, same list)
+// ├── ShopDetails  (full screen - shop name/photo/categories, from Profile)
+// └── Verification (full screen, opened from Home banner / Profile)
 
 export type ListingsStackParamList = {
   ListingsHome: undefined;
@@ -19,14 +26,32 @@ export type ListingsStackParamList = {
 };
 
 export type SellerTabParamList = {
-  Dashboard: undefined;
-  Shop: undefined;
-  Listings: NavigatorScreenParams<ListingsStackParamList> | undefined;
+  Home: undefined;
+  Create: undefined;
+  Listing: NavigatorScreenParams<ListingsStackParamList> | undefined;
   Profile: undefined;
 };
 
 export type SellerStackParamList = {
   SellerTabs: NavigatorScreenParams<SellerTabParamList> | undefined;
+  AddProduct: undefined;
+  Notifications: undefined;
+  ProductDetails: { productId: string };
+  // Everything the seller typed, carried from AddProduct - nothing is saved
+  // until the submit endpoint exists.
+  ProductPreview: {
+    imageUri: string | null;
+    name: string;
+    category: string | null;
+    tags: string[];
+    price: string;
+    description: string;
+    location: string;
+    quantity: string;
+  };
+  BusinessName: undefined;
+  PhoneNumber: undefined;
+  ShopDetails: undefined;
   Verification: undefined;
 };
 

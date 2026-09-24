@@ -1,213 +1,332 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
+  Image,
   FlatList,
+  ScrollView,
   Pressable,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { Plus, Package } from "lucide-react-native";
-import { Chip } from "@components/Chip";
-import { PrimaryButton } from "@components/PrimaryButton";
-import { SellerListingRow } from "@components/SellerListingRow";
+import { ArrowLeft, MapPin, MoreVertical } from "lucide-react-native";
+import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
+import { SyncBanner, SyncStatus } from "@components/SyncBanner";
 import { colors, fonts, radii } from "@constants/theme";
-import { LISTING_STATUS_META } from "@constants/sellerStatus";
+import { useAuth } from "@context/AuthContext";
+import { useConnectivityChange } from "@hooks/useIsOffline";
 import { ListingsStackProps } from "@navigation/sellerRoutes";
-import { sellerService } from "@services/sellerService";
-import { ListingStatus, SellerListing } from "@types/seller";
+import * as sellerRepository from "@services/sellerRepository";
+import { DashboardListing, ListingApprovalStatus } from "@types/seller";
 
-type Filter = "ALL" | ListingStatus;
-const FILTERS: Filter[] = ["ALL", "ACTIVE", "DRAFT", "SOLD_OUT"];
+// Reads through sellerRepository: GET /api/seller/shop (which despite its name
+// returns this seller's products) when online, the SQLite mirror when not.
+const GREEN = "#1CA30A";
+
+type Filter = "all" | ListingApprovalStatus;
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "approved", label: "Approved" },
+  { key: "pending", label: "Pending" },
+  { key: "rejected", label: "Rejected" },
+];
+
+const STATUS_LABEL: Record<ListingApprovalStatus, string> = {
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+};
 
 export function SellerListingsScreen({ navigation }: ListingsStackProps<"ListingsHome">) {
-  const [listings, setListings] = useState<SellerListing[] | null>(null);
-  const [filter, setFilter] = useState<Filter>("ALL");
+  const { session } = useAuth();
+  const [listings, setListings] = useState<DashboardListing[] | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setIsRefreshing(true);
-    try {
-      const res = await sellerService.getMyListings();
-      if (res.success) {
-        setListings(res.data);
-        setError(null);
-      } else {
-        setError(res.message);
+  const userId = session?.user.id;
+
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!userId) {
+        setError("We couldn't tell which account you're signed in to.");
+        return;
       }
-    } catch {
-      setError("Couldn't load your listings. Pull down to try again.");
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+      if (isRefresh) setIsRefreshing(true);
+      // Before any await: reading the local database can be slow, and the
+      // banner must not wait on it.
+      setSyncStatus("syncing");
 
-  // Refetch on focus so returning from the create/edit form shows changes.
+      // Paint the stored copy first so the list is on screen immediately;
+      // the network call then quietly replaces it.
+      if (!isRefresh) {
+        const cached = await sellerRepository.getCachedListings(userId).catch(() => null);
+        if (cached && cached.length > 0) setListings(cached);
+      }
+
+      try {
+        const res = await sellerRepository.getMyListings(userId);
+        if (res.data) {
+          setListings(res.data);
+          setError(null);
+          setSyncStatus(res.fromCache ? "offline" : "done");
+        } else {
+          setError(res.message);
+          // The error is already on screen; don't also claim it synced.
+          setSyncStatus(res.fromCache ? "offline" : "idle");
+        }
+      } catch {
+        setError("Couldn't load your listings. Pull down to try again.");
+        setSyncStatus("idle");
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [userId]
+  );
+
+  // Announce the drop straight away, and on reconnect say so and refetch -
+  // whatever failed while offline is worth retrying immediately.
+  useConnectivityChange({
+    onOffline: () => setSyncStatus("offline"),
+    onOnline: () => {
+      setSyncStatus("online");
+      load();
+    },
+  });
+
+  // Refetch on focus so a product added from the Create tab shows up.
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load])
   );
 
-  const visible = useMemo(
-    () => (filter === "ALL" ? listings ?? [] : (listings ?? []).filter((l) => l.status === filter)),
-    [listings, filter]
-  );
-
-  const countFor = (f: Filter) =>
-    f === "ALL" ? listings?.length ?? 0 : listings?.filter((l) => l.status === f).length ?? 0;
-
-  if (!listings && !error) {
-    return (
-      <SafeAreaView style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </SafeAreaView>
-    );
-  }
+  // Listings carry no location of their own - the shop's is what a buyer sees.
+  const shopLocation = session?.user.location;
+  const visible =
+    listings?.filter((listing) => filter === "all" || listing.status === filter) ?? [];
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <SyncBanner status={syncStatus} syncingMessage="Updating your listings…" />
       <View style={styles.header}>
-        <Text style={styles.title}>My listings</Text>
         <Pressable
-          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-          onPress={() => navigation.navigate("ListingForm", {})}
+          onPress={() => (navigation.canGoBack() ? navigation.goBack() : undefined)}
+          hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Add listing"
+          accessibilityLabel="Go back"
         >
-          <Plus size={18} color={colors.white} />
-          <Text style={styles.addLabel}>Add</Text>
+          <ArrowLeft size={26} color={GREEN} />
         </Pressable>
+        <Text style={styles.headerTitle}>My Listings</Text>
+        {/* Balances the arrow so the title stays optically centred. */}
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-        >
-          {FILTERS.map((f) => (
-            <Chip
-              key={f}
-              label={`${f === "ALL" ? "All" : LISTING_STATUS_META[f].label} (${countFor(f)})`}
-              selected={filter === f}
-              onPress={() => setFilter(f)}
-            />
-          ))}
-        </ScrollView>
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <FlatList
-        data={visible}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item }) => (
-          <SellerListingRow
-            listing={item}
-            onPress={() => navigation.navigate("ListingForm", { listingId: item.id })}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => load(true)}
-            tintColor={colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          listings ? (
-            <View style={styles.empty}>
-              <View style={styles.emptyIcon}>
-                <Package size={28} color={colors.primary} />
-              </View>
-              <Text style={styles.emptyTitle}>
-                {filter === "ALL"
-                  ? "No listings yet"
-                  : `No ${LISTING_STATUS_META[filter].label.toLowerCase()} listings`}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterBar}
+        contentContainerStyle={styles.filters}
+      >
+        {FILTERS.map((option) => {
+          const isActive = filter === option.key;
+          return (
+            <Pressable
+              key={option.key}
+              style={[styles.filter, isActive && styles.filterActive]}
+              onPress={() => setFilter(option.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.filterLabel, isActive && styles.filterLabelActive]}>
+                {option.label}
               </Text>
-              {filter === "ALL" ? (
-                <>
-                  <Text style={styles.emptyBody}>
-                    Add your first product so buyers nearby can find you.
-                  </Text>
-                  <PrimaryButton
-                    label="Add your first listing"
-                    onPress={() => navigation.navigate("ListingForm", {})}
-                    style={styles.emptyButton}
-                  />
-                </>
-              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {error ? <Text style={styles.notice}>{error}</Text> : null}
+
+      {listings === null && !error ? (
+        <View style={styles.centre}>
+          <ActivityIndicator size="large" color={GREEN} />
+        </View>
+      ) : (
+        <FlatList
+          data={visible}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => load(true)}
+              tintColor={GREEN}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>Nothing here yet</Text>
+              <Text style={styles.emptyBody}>
+                {filter === "all"
+                  ? "Add your first product so buyers nearby can find you."
+                  : `You have no ${STATUS_LABEL[filter as ListingApprovalStatus].toLowerCase()} listings.`}
+              </Text>
             </View>
-          ) : null
-        }
-      />
+          }
+          renderItem={({ item }) => (
+            <ListingCard
+              listing={item}
+              location={shopLocation}
+              onPress={() => navigation.navigate("ProductDetails", { productId: item.id })}
+            />
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
+function ListingCard({
+  listing,
+  location,
+  onPress,
+}: {
+  listing: DashboardListing;
+  location?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
+      {listing.image ? (
+        <Image source={{ uri: listing.image }} style={styles.cardImage} resizeMode="cover" />
+      ) : (
+        <View style={[styles.cardImage, styles.cardImageFallback]} />
+      )}
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardName} numberOfLines={1}>
+          {listing.name}
+        </Text>
+        <Text style={styles.cardPrice}>GHS {listing.price.toFixed(2)}</Text>
+        {location ? (
+          <View style={styles.cardLocation}>
+            <MapPin size={16} color={colors.textMuted} />
+            <Text style={styles.cardLocationText} numberOfLines={1}>
+              {location}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.cardEnd}>
+        {/* TODO: no per-listing actions yet - edit/delete need endpoints. */}
+        <Pressable hitSlop={8} accessibilityRole="button" accessibilityLabel={`Options for ${listing.name}`}>
+          <MoreVertical size={20} color={colors.text} />
+        </Pressable>
+        <View style={[styles.status, STATUS_STYLE[listing.status].pill]}>
+          <Text style={[styles.statusLabel, STATUS_STYLE[listing.status].label]}>
+            {STATUS_LABEL[listing.status]}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const AMBER = "#F5A623";
+const RED = "#E02B2B";
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background,
-  },
+  container: { flex: 1, backgroundColor: colors.white },
+  centre: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 4,
   },
-  title: { fontSize: 24, fontFamily: fonts.headline, color: colors.primary },
-  addButton: {
+  headerTitle: { fontSize: 22, fontFamily: fonts.headlineBold, color: GREEN },
+  headerSpacer: { width: 26 },
+
+  // flexGrow: 0 stops the horizontal ScrollView claiming the leftover
+  // vertical space in the column.
+  filterBar: { flexGrow: 0 },
+  filters: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingVertical: 16 },
+  filter: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#F1F4F2",
+  },
+  filterActive: { backgroundColor: GREEN },
+  filterLabel: { fontSize: 15, fontFamily: fonts.bodyMedium, color: colors.text },
+  filterLabelActive: { color: colors.white, fontFamily: fonts.bodySemiBold },
+
+  notice: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    fontSize: 13,
+    fontFamily: fonts.bodyMedium,
+    color: colors.textMuted,
+  },
+  list: { paddingHorizontal: 20, paddingBottom: TAB_BAR_CLEARANCE, gap: 14, flexGrow: 1 },
+  card: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.primary,
-    borderRadius: radii.button,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 12,
+    padding: 12,
+    borderRadius: radii.card,
+    backgroundColor: colors.white,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  addLabel: { color: colors.white, fontSize: 14, fontFamily: fonts.bodySemiBold },
+  cardImage: { width: 76, height: 76, borderRadius: 10 },
+  cardImageFallback: { backgroundColor: colors.neutralSoft },
+  cardBody: { flex: 1, gap: 2 },
+  cardName: { fontSize: 17, fontFamily: fonts.bodyMedium, color: colors.text },
+  cardPrice: { fontSize: 17, fontFamily: fonts.bodySemiBold, color: colors.text },
+  cardLocation: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  cardLocationText: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  cardEnd: { alignItems: "flex-end", justifyContent: "space-between", alignSelf: "stretch" },
+
+  status: { borderRadius: 16, paddingHorizontal: 14, paddingVertical: 6 },
+  statusLabel: { fontSize: 14, fontFamily: fonts.bodySemiBold },
+
+  empty: { alignItems: "center", paddingTop: 60, paddingHorizontal: 20, gap: 6 },
   pressed: { opacity: 0.85 },
-  filters: { paddingHorizontal: 20, gap: 8, paddingBottom: 12 },
-  error: {
-    fontSize: 14,
-    fontFamily: fonts.bodyRegular,
-    color: colors.danger,
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-  },
-  listContent: { paddingHorizontal: 20, paddingBottom: 24, flexGrow: 1 },
-  separator: { height: 10 },
-  empty: { alignItems: "center", paddingTop: 48, paddingHorizontal: 12 },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  emptyTitle: { fontSize: 17, fontFamily: fonts.bodySemiBold, color: colors.text },
+  emptyTitle: { fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.text },
   emptyBody: {
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
     color: colors.textMuted,
     textAlign: "center",
-    marginTop: 6,
   },
-  emptyButton: { marginTop: 20 },
 });
+
+// Pending and Approved are filled with white type; Rejected is a pale tint
+// with red type, per the design.
+const STATUS_STYLE: Record<
+  ListingApprovalStatus,
+  { pill: object; label: object }
+> = {
+  pending: { pill: { backgroundColor: AMBER }, label: { color: colors.white } },
+  approved: { pill: { backgroundColor: GREEN }, label: { color: colors.white } },
+  rejected: { pill: { backgroundColor: "#FDF7EC" }, label: { color: RED } },
+};

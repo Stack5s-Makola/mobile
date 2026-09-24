@@ -27,3 +27,18 @@ export function initials(name: string | undefined): string {
     .map((p) => p[0]!.toUpperCase())
     .join("");
 }
+
+// Strips thousands separators, spaces and currency symbols from a typed
+// amount. "4,595.00" reaches the API as "4595.00" - sent as-is it parses to
+// NaN server-side and comes back as "price must be greater than 0".
+export function normalizeAmount(input: string): string {
+  const cleaned = input.replace(/[^\d.]/g, "");
+  const [whole, ...rest] = cleaned.split(".");
+  // Keep only the first decimal point ("1.2.3" -> "1.23").
+  return rest.length > 0 ? `${whole}.${rest.join("")}` : whole;
+}
+
+// Whole numbers only - same problem, no decimal part.
+export function normalizeCount(input: string): string {
+  return input.replace(/\D/g, "");
+}

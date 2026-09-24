@@ -1,9 +1,9 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LayoutDashboard, Store, Package, User } from "lucide-react-native";
-import { colors, fonts } from "@constants/theme";
+import { View } from "react-native";
+import { Home, Plus, Package, User } from "lucide-react-native";
+import { AppTabBar } from "@components/AppTabBar";
 import {
   ListingsStackParamList,
   SellerStackParamList,
@@ -15,20 +15,28 @@ import { SellerListingsScreen } from "@screens/seller/SellerListingsScreen";
 import { ListingFormScreen } from "@screens/seller/ListingFormScreen";
 import { SellerVerificationScreen } from "@screens/seller/SellerVerificationScreen";
 import { SellerProfileScreen } from "@screens/seller/SellerProfileScreen";
+import { BusinessNameScreen } from "@screens/seller/BusinessNameScreen";
+import { PhoneNumberScreen } from "@screens/seller/PhoneNumberScreen";
+import { AddProductScreen } from "@screens/seller/AddProductScreen";
+import { ProductPreviewScreen } from "@screens/seller/ProductPreviewScreen";
+import { SellerProductDetailsScreen } from "@screens/seller/SellerProductDetailsScreen";
+import { NotificationsScreen } from "@screens/seller/NotificationsScreen";
 
-// Seller side of the role-based nav skeleton. Tabs: Dashboard, Shop,
-// Listings, Profile. Verification is a full screen on top of the tabs
-// (reached from the Dashboard banner and Profile menu) rather than a tab -
-// it's a one-off task, not a place sellers return to daily.
+// Seller side of the role-based nav skeleton. Tabs: Home, Create, Shop,
+// Profile.
 //
-// Listings has depth (list -> create/edit form), so it gets its own
-// nested stack; the other tabs are single screens.
+// "Create" is an action dressed as a tab: it has no screen of its own, it
+// intercepts the press and pushes AddProduct ABOVE the tabs, so the form
+// isn't sitting under the floating tab bar.
+//
+// Shop has depth (list -> create/edit form), so it gets a nested stack.
+// ShopDetails and Verification are full screens above the tabs, reached
+// from Profile (and the Home banner) - one-off tasks, not daily
+// destinations.
 
 const Stack = createNativeStackNavigator<SellerStackParamList>();
 const Tab = createBottomTabNavigator<SellerTabParamList>();
 const ListingsStack = createNativeStackNavigator<ListingsStackParamList>();
-
-const TAB_BAR_HEIGHT = 72; // excluding the bottom safe-area inset
 
 function ListingsNavigator() {
   return (
@@ -39,37 +47,40 @@ function ListingsNavigator() {
   );
 }
 
-const TAB_ICONS: Record<keyof SellerTabParamList, typeof LayoutDashboard> = {
-  Dashboard: LayoutDashboard,
-  Shop: Store,
-  Listings: Package,
+// Never actually rendered: the Create tab always prevents its own press.
+function CreatePlaceholder() {
+  return <View />;
+}
+
+const TAB_ICONS: Record<keyof SellerTabParamList, typeof Home> = {
+  Home,
+  Create: Plus,
+  Listing: Package,
   Profile: User,
 };
 
 function SellerTabs() {
-  const insets = useSafeAreaInsets();
-
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => {
-        const Icon = TAB_ICONS[route.name];
-        return {
-          headerShown: false,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textMuted,
-          tabBarStyle: {
-            height: TAB_BAR_HEIGHT + insets.bottom,
-            paddingTop: 10,
-            paddingBottom: insets.bottom + 10,
-          },
-          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 12, marginTop: 2 },
-          tabBarIcon: ({ color }) => <Icon color={color} size={24} />,
-        };
-      }}
+      // "history" so back returns to the previously visited tab rather than
+      // always jumping to the first one - the Profile screen's back arrow
+      // relies on this.
+      backBehavior="history"
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <AppTabBar {...props} icons={TAB_ICONS} />}
     >
-      <Tab.Screen name="Dashboard" component={SellerDashboardScreen} />
-      <Tab.Screen name="Shop" component={SellerShopScreen} />
-      <Tab.Screen name="Listings" component={ListingsNavigator} />
+      <Tab.Screen name="Home" component={SellerDashboardScreen} />
+      <Tab.Screen
+        name="Create"
+        component={CreatePlaceholder}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate("AddProduct");
+          },
+        })}
+      />
+      <Tab.Screen name="Listing" component={ListingsNavigator} />
       <Tab.Screen name="Profile" component={SellerProfileScreen} />
     </Tab.Navigator>
   );
@@ -79,6 +90,13 @@ export function SellerNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SellerTabs" component={SellerTabs} />
+      <Stack.Screen name="AddProduct" component={AddProductScreen} />
+      <Stack.Screen name="ProductPreview" component={ProductPreviewScreen} />
+      <Stack.Screen name="ProductDetails" component={SellerProductDetailsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="BusinessName" component={BusinessNameScreen} />
+      <Stack.Screen name="PhoneNumber" component={PhoneNumberScreen} />
+      <Stack.Screen name="ShopDetails" component={SellerShopScreen} />
       <Stack.Screen name="Verification" component={SellerVerificationScreen} />
     </Stack.Navigator>
   );

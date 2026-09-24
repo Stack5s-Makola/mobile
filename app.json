@@ -4,8 +4,10 @@
     "slug": "makola-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": ["**/*"],
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.makola.mobile"
@@ -14,7 +16,8 @@
       "package": "com.makola.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro"
@@ -35,6 +38,10 @@
           "cameraPermission": "Makola uses your camera to take listing photos and verification selfies."
         }
       ]
-    ]
+    ],
+    "androidStatusBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    }
   }
 }

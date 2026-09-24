@@ -89,44 +89,69 @@ import {
 
 
 // POST /api/register/set-seller-profile - creates the account AND emails a
-// 6-digit code, in one call. Contract confirmed by probing the live backend:
+// 6-digit code, in one call. Sent as multipart/form-data so the shop photo
+// can ride along; the server stores it on Cloudinary and the returned URL
+// then shows up as `avatar` on the dashboard. Contract confirmed by probing
+// the live endpoint:
 //
-//   wire field   <- our field        notes
-//   email        <- email
-//   phone        <- phone            9-15 digits, optional leading +
-//   password     <- password         min 8 characters
-//   name         <- fullName         max 120 chars
-//   shopName     <- businessName     max 120 chars, must be globally unique
-//   location     <- location         object of { latitude, longitude }
-//   role         <- (constant)       "SELLER"
+//   field                 <- our field      notes
+//   email                 <- email
+//   phone                 <- phone          9-15 digits, optional leading +
+//   password              <- password       min 8 characters
+//   name                  <- fullName       max 120 chars
+//   shopName              <- businessName   max 120 chars, globally unique
+//   location[latitude]    <- location       bracket fields, NOT a JSON string -
+//   location[longitude]   <- location       a JSON string fails validation
+//   location[address]     <- location       with "location must be an object"
+//   role                  <- (constant)     "SELLER"
+//   image                 <- photoUri       the file. This exact field name -
+//                                           anything else is rejected with
+//                                           "Unexpected field - <name>".
+//
+// Omitting `image` is fine: sellers who skip the photo still register.
 //
 // Returns { saved, accessToken, expiresIn, user } - a token is issued here,
-// before the email is verified, and it expires in 15 minutes. The OTP step
-// identifies the account by email (the response carries no phone).
+// before the email is verified. The OTP step identifies the account by email
+// (the response carries no phone).
 //
 // 409s to expect, message only (no `errors` map):
 //   "An account with that phone number already exists"
 //   "An account with this email already exists"
 //   "That shop name is already taken"
-//
-// NOTE: photoUri is absent from the contract. The endpoint accepts the
-// request without it and ignores it if sent, so the seller's photo is not
-// uploaded yet.
+
+// React Native's FormData takes {uri, name, type} in place of a Blob.
+type FormDataFile = { uri: string; name: string; type: string };
+
+function toFilePart(uri: string): FormDataFile {
+  const extension = (uri.split(".").pop() ?? "").toLowerCase();
+  const safe = /^(jpg|jpeg|png|webp|heic)$/.test(extension) ? extension : "jpg";
+  return {
+    uri,
+    name: `shop-logo.${safe}`,
+    type: safe === "jpg" ? "image/jpeg" : `image/${safe}`,
+  };
+}
+
 export function registerSeller(
   payload: RegisterSellerPayload
 ): Promise<ApiResponse<RegisterSellerResult>> {
-  return apiRequest("/api/register/set-seller-profile", {
-    method: "POST",
-    body: JSON.stringify({
-      email: payload.email.trim(),
-      phone: payload.phone.trim(),
-      password: payload.password,
-      name: payload.fullName.trim(),
-      shopName: payload.businessName.trim(),
-      location: payload.location,
-      role: "SELLER",
-    }),
-  });
+  const form = new FormData();
+  form.append("email", payload.email.trim());
+  form.append("phone", payload.phone.trim());
+  form.append("password", payload.password);
+  form.append("name", payload.fullName.trim());
+  form.append("shopName", payload.businessName.trim());
+  form.append("role", "SELLER");
+  form.append("location[latitude]", String(payload.location.latitude));
+  form.append("location[longitude]", String(payload.location.longitude));
+  if (payload.location.address) {
+    form.append("location[address]", payload.location.address);
+  }
+  if (payload.photoUri) {
+    form.append("image", toFilePart(payload.photoUri) as unknown as Blob);
+  }
+
+  return apiRequest("/api/register/set-seller-profile", { method: "POST", body: form });
 }
 
 // POST /api/register/buyer - creates a buyer account and emails a code.

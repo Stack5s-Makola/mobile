@@ -78,16 +78,14 @@ export interface SellerProfilePayload {
   photoUri?: string;
 }
 
-// TODO: field names below are our best guess pending Daniel confirming
-// the exact request body for POST /api/register/set-seller-profile.
-// Likely correct given what the screen collects, but not verified.
 // Confirmed against POST /api/register/set-seller-profile (probed live).
 // Field names differ from ours on the wire - the service maps them:
 //   fullName -> name, businessName -> shopName, plus role: "SELLER".
 //
 // location is GPS coordinates, NOT a place name.
-// photoUri is not part of the contract - the endpoint ignores it, so the
-// seller's photo is not uploaded anywhere yet.
+// photoUri is a local device URI. It's sent as the multipart `image` field,
+// stored on Cloudinary server-side, and comes back as `avatar` on the seller
+// dashboard. Optional - sellers who skip the photo still register.
 export interface SellerLocation {
   latitude: number;
   longitude: number;

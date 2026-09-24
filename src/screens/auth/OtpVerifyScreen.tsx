@@ -164,6 +164,8 @@ export function OtpVerifyScreen({ navigation, route }: any) {
               // account was registered with - this is what decides between
               // the buyer and seller stacks.
               role: verified.role ?? issued?.role ?? "BUYER",
+              // Reaching here means the code checked out.
+              emailVerified: true,
               fullName: profile?.fullName ?? "",
               location: profile?.location ?? "",
               businessName: profile?.businessName,

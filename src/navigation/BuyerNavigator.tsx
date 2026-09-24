@@ -2,7 +2,8 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { BuyerStackParamList, BuyerTabParamList } from "@navigation/buyerRoutes";
-import { BuyerTabBar } from "@components/BuyerTabBar";
+import { AppTabBar } from "@components/AppTabBar";
+import { Home, Search, Bookmark, User } from "lucide-react-native";
 import { BuyerHomeScreen } from "@screens/buyer/BuyerHomeScreen";
 import { SearchTab } from "@screens/buyer/tabs/SearchTab";
 import { SavedTab } from "@screens/buyer/tabs/SavedTab";
@@ -19,9 +20,19 @@ import { CategoriesScreen } from "@screens/buyer/CategoriesScreen";
 const Stack = createNativeStackNavigator<BuyerStackParamList>();
 const Tab = createBottomTabNavigator<BuyerTabParamList>();
 
+const TAB_ICONS: Record<keyof BuyerTabParamList, typeof Home> = {
+  Home,
+  Search,
+  Saved: Bookmark,
+  Profile: User,
+};
+
 function BuyerTabs() {
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={(props) => <BuyerTabBar {...props} />}>
+    <Tab.Navigator
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <AppTabBar {...props} icons={TAB_ICONS} />}
+    >
       <Tab.Screen name="Home" component={BuyerHomeScreen} />
       <Tab.Screen name="Search" component={SearchTab} />
       <Tab.Screen name="Saved" component={SavedTab} />
