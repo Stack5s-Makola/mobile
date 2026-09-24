@@ -14,14 +14,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { ArrowLeft, MapPin, MoreVertical } from "lucide-react-native";
 import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
+import { SyncBanner, SyncStatus } from "@components/SyncBanner";
 import { colors, fonts, radii } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
+import { useConnectivityChange } from "@hooks/useIsOffline";
 import { ListingsStackProps } from "@navigation/sellerRoutes";
-import * as apiSellerService from "@services/api/sellerService";
+import * as sellerRepository from "@services/sellerRepository";
 import { DashboardListing, ListingApprovalStatus } from "@types/seller";
 
-// Reads GET /api/seller/shop, which despite its name returns this seller's
-// products.
+// Reads through sellerRepository: GET /api/seller/shop (which despite its name
+// returns this seller's products) when online, the SQLite mirror when not.
 const GREEN = "#1CA30A";
 
 type Filter = "all" | ListingApprovalStatus;
@@ -45,23 +47,58 @@ export function SellerListingsScreen({ navigation }: ListingsStackProps<"Listing
   const [filter, setFilter] = useState<Filter>("all");
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setIsRefreshing(true);
-    try {
-      const res = await apiSellerService.getMyListings();
-      if (res.success) {
-        setListings(res.data);
-        setError(null);
-      } else {
-        setError(res.message);
+  const userId = session?.user.id;
+
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!userId) {
+        setError("We couldn't tell which account you're signed in to.");
+        return;
       }
-    } catch {
-      setError("Couldn't load your listings. Pull down to try again.");
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+      if (isRefresh) setIsRefreshing(true);
+      // Before any await: reading the local database can be slow, and the
+      // banner must not wait on it.
+      setSyncStatus("syncing");
+
+      // Paint the stored copy first so the list is on screen immediately;
+      // the network call then quietly replaces it.
+      if (!isRefresh) {
+        const cached = await sellerRepository.getCachedListings(userId).catch(() => null);
+        if (cached && cached.length > 0) setListings(cached);
+      }
+
+      try {
+        const res = await sellerRepository.getMyListings(userId);
+        if (res.data) {
+          setListings(res.data);
+          setError(null);
+          setSyncStatus(res.fromCache ? "offline" : "done");
+        } else {
+          setError(res.message);
+          // The error is already on screen; don't also claim it synced.
+          setSyncStatus(res.fromCache ? "offline" : "idle");
+        }
+      } catch {
+        setError("Couldn't load your listings. Pull down to try again.");
+        setSyncStatus("idle");
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [userId]
+  );
+
+  // Announce the drop straight away, and on reconnect say so and refetch -
+  // whatever failed while offline is worth retrying immediately.
+  useConnectivityChange({
+    onOffline: () => setSyncStatus("offline"),
+    onOnline: () => {
+      setSyncStatus("online");
+      load();
+    },
+  });
 
   // Refetch on focus so a product added from the Create tab shows up.
   useFocusEffect(
@@ -77,6 +114,7 @@ export function SellerListingsScreen({ navigation }: ListingsStackProps<"Listing
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <SyncBanner status={syncStatus} syncingMessage="Updating your listings…" />
       <View style={styles.header}>
         <Pressable
           onPress={() => (navigation.canGoBack() ? navigation.goBack() : undefined)}
@@ -115,6 +153,8 @@ export function SellerListingsScreen({ navigation }: ListingsStackProps<"Listing
         })}
       </ScrollView>
 
+      {error ? <Text style={styles.notice}>{error}</Text> : null}
+
       {listings === null && !error ? (
         <View style={styles.centre}>
           <ActivityIndicator size="large" color={GREEN} />
@@ -133,18 +173,21 @@ export function SellerListingsScreen({ navigation }: ListingsStackProps<"Listing
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>
-                {error ? "Something went wrong" : "Nothing here yet"}
-              </Text>
+              <Text style={styles.emptyTitle}>Nothing here yet</Text>
               <Text style={styles.emptyBody}>
-                {error ??
-                  (filter === "all"
-                    ? "Add your first product so buyers nearby can find you."
-                    : `You have no ${STATUS_LABEL[filter as ListingApprovalStatus].toLowerCase()} listings.`)}
+                {filter === "all"
+                  ? "Add your first product so buyers nearby can find you."
+                  : `You have no ${STATUS_LABEL[filter as ListingApprovalStatus].toLowerCase()} listings.`}
               </Text>
             </View>
           }
-          renderItem={({ item }) => <ListingCard listing={item} location={shopLocation} />}
+          renderItem={({ item }) => (
+            <ListingCard
+              listing={item}
+              location={shopLocation}
+              onPress={() => navigation.navigate("ProductDetails", { productId: item.id })}
+            />
+          )}
         />
       )}
     </SafeAreaView>
@@ -154,12 +197,18 @@ export function SellerListingsScreen({ navigation }: ListingsStackProps<"Listing
 function ListingCard({
   listing,
   location,
+  onPress,
 }: {
   listing: DashboardListing;
   location?: string;
+  onPress: () => void;
 }) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
       {listing.image ? (
         <Image source={{ uri: listing.image }} style={styles.cardImage} resizeMode="cover" />
       ) : (
@@ -192,7 +241,7 @@ function ListingCard({
           </Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -227,6 +276,13 @@ const styles = StyleSheet.create({
   filterLabel: { fontSize: 15, fontFamily: fonts.bodyMedium, color: colors.text },
   filterLabelActive: { color: colors.white, fontFamily: fonts.bodySemiBold },
 
+  notice: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    fontSize: 13,
+    fontFamily: fonts.bodyMedium,
+    color: colors.textMuted,
+  },
   list: { paddingHorizontal: 20, paddingBottom: TAB_BAR_CLEARANCE, gap: 14, flexGrow: 1 },
   card: {
     flexDirection: "row",
@@ -254,6 +310,7 @@ const styles = StyleSheet.create({
   statusLabel: { fontSize: 14, fontFamily: fonts.bodySemiBold },
 
   empty: { alignItems: "center", paddingTop: 60, paddingHorizontal: 20, gap: 6 },
+  pressed: { opacity: 0.85 },
   emptyTitle: { fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.text },
   emptyBody: {
     fontSize: 14,

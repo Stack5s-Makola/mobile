@@ -15,15 +15,16 @@ import { Bell, MapPin, MoreVertical, Plus } from "lucide-react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { colors, fonts, radii } from "@constants/theme";
 import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
+import { SyncBanner, SyncStatus } from "@components/SyncBanner";
 import { useAuth } from "@context/AuthContext";
+import { useConnectivityChange } from "@hooks/useIsOffline";
 import { SellerTabProps } from "@navigation/sellerRoutes";
-import * as apiSellerService from "@services/api/sellerService";
+import * as sellerRepository from "@services/sellerRepository";
 import { DashboardListing, SellerDashboardData } from "@types/seller";
-import { firstName, formatPrice, initials } from "@utils/format";
+import { formatPrice, initials } from "@utils/format";
 
-// Reads GET /api/seller/dashboard directly rather than through the
-// sellerService swap-point: that endpoint is live, while shop/listings/
-// verification are still 404 and stay on the mock.
+// Reads through sellerRepository: the live GET /api/seller/dashboard when
+// there's a connection, the SQLite mirror when there isn't.
 
 // The "+ Add products" fill. Bright enough that black type reads better on
 // it than white.
@@ -42,23 +43,60 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setIsRefreshing(true);
-    try {
-      const res = await apiSellerService.getDashboard();
-      if (res.success) {
-        setDashboard(res.data);
-        setError(null);
-      } else {
-        setError(res.message);
+  const userId = session?.user.id;
+
+  const load = useCallback(
+    async (isRefresh = false) => {
+      if (!userId) {
+        setError("We couldn't tell which account you're signed in to.");
+        return;
       }
-    } catch {
-      setError("Couldn't load your dashboard. Pull down to try again.");
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+      if (isRefresh) setIsRefreshing(true);
+      // Before any await: reading the local database can be slow, and the
+      // banner must not wait on it.
+      setSyncStatus("syncing");
+
+      // Paint the stored copy first so the shop is on screen immediately;
+      // the network call then quietly replaces it.
+      if (!isRefresh) {
+        const cached = await sellerRepository.getCachedDashboard(userId).catch(() => null);
+        if (cached) setDashboard(cached);
+      }
+
+      try {
+        const res = await sellerRepository.getDashboard(userId);
+        if (res.data) {
+          setDashboard(res.data);
+          // The banner says "You're offline"; no need to repeat it in the
+          // error line when the shop itself rendered fine from cache.
+          setError(null);
+          setSyncStatus(res.fromCache ? "offline" : "done");
+        } else {
+          setError(res.message);
+          // The error is already on screen; don't also claim it synced.
+          setSyncStatus(res.fromCache ? "offline" : "idle");
+        }
+      } catch {
+        setError("Couldn't load your dashboard. Pull down to try again.");
+        setSyncStatus("idle");
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [userId]
+  );
+
+  // Announce the drop straight away, and on reconnect say so and refetch -
+  // whatever failed while offline is worth retrying immediately.
+  useConnectivityChange({
+    onOffline: () => setSyncStatus("offline"),
+    onOnline: () => {
+      setSyncStatus("online");
+      load();
+    },
+  });
 
   // Refetch whenever the tab regains focus so the counts reflect edits made
   // elsewhere.
@@ -74,17 +112,16 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
     navigation.navigate("AddProduct");
   }
 
-  function editListing(listingId: string) {
-    navigation.navigate("Listing", {
-      screen: "ListingForm",
-      params: { listingId },
-      initial: false,
-    });
+  function openListing(listingId: string) {
+    navigation.navigate("ProductDetails", { productId: listingId });
   }
 
   if (!dashboard && !error) {
     return (
-      <SafeAreaView style={styles.loading}>
+      // The banner belongs here too - this branch renders on a cold start,
+      // which is exactly when the sync/offline state matters most.
+      <SafeAreaView style={styles.loading} edges={["top"]}>
+        <SyncBanner status={syncStatus} syncingMessage="Updating your shop…" />
         <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
@@ -98,6 +135,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <SyncBanner status={syncStatus} syncingMessage="Updating your shop…" />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -108,7 +146,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
           />
         }
       >
-        <Text style={styles.greeting}>Hello, {firstName(displayName)}</Text>
+        <Text style={styles.greeting}>Hello, {displayName}</Text>
 
         <View style={styles.identity}>
           {/* avatarBox matches the avatar exactly so the badge pins to the
@@ -134,10 +172,9 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
           <Text style={styles.shopName} numberOfLines={2}>
             {shopName}
           </Text>
-          {/* TODO: no notifications screen yet - wire this up once there is
-              one to open. */}
           <Pressable
-            onPress={() => {}}
+            onPress={() => navigation.navigate("Notifications")}
+            style={({ pressed }) => pressed && styles.pressed}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Notifications"
@@ -184,7 +221,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
                   <ListingRow
                     key={listing.id}
                     listing={listing}
-                    onPress={() => editListing(listing.id)}
+                    onPress={() => openListing(listing.id)}
                   />
                 ))}
               </View>
@@ -266,7 +303,7 @@ const styles = StyleSheet.create({
   },
   content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE, gap: 16 },
 
-  greeting: { fontSize: 14, fontFamily: fonts.bodyMedium, color: colors.textMuted },
+  greeting: { fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.textMuted },
   identity: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: -4 },
   avatarBox: { width: 52, height: 52 },
   avatar: { width: 52, height: 52, borderRadius: 26 },

@@ -6,6 +6,8 @@ import {
   writeStoredSession,
   clearStoredSession,
 } from "@services/session";
+import { clearCachedData } from "@services/db/database";
+import { clearCachedImages } from "@services/db/imageCache";
 
 type AuthContextValue = {
   session: Session | null;
@@ -72,6 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     setSession(null);
     await clearStoredSession();
+    // The next seller to sign in on this device must not inherit the previous
+    // one's shop or photos. Failing to clear shouldn't block the sign-out.
+    try {
+      await clearCachedData();
+      clearCachedImages();
+    } catch (err) {
+      console.warn("Couldn't clear offline cache on logout", err);
+    }
   }
 
   return (

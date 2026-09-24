@@ -11,7 +11,8 @@
       "@context/*": ["src/context/*"],
       "@constants/*": ["src/constants/*"],
       "@types/*": ["src/types/*"],
-      "@utils/*": ["src/utils/*"]
+      "@utils/*": ["src/utils/*"],
+      "@hooks/*": ["src/hooks/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]

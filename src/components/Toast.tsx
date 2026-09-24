@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   error: { backgroundColor: colors.danger },
   text: {
     color: colors.white,
-    fontFamily: fonts.bodySemiBold,
+    fontFamily: fonts.bodyBold,
     fontSize: 15,
     lineHeight: 20,
   },

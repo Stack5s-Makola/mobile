@@ -8,7 +8,9 @@ import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
+  Manrope_700Bold,
 } from "@expo-google-fonts/manrope";
+import { colors } from "@constants/theme";
 import { AuthProvider } from "@context/AuthContext";
 import { ToastProvider } from "@components/Toast";
 import { RootNavigator } from "@navigation/RootNavigator";
@@ -20,6 +22,7 @@ export default function App() {
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
+    Manrope_700Bold,
   });
 
   if (!fontsLoaded) {
@@ -39,7 +42,7 @@ export default function App() {
         <ToastProvider>
           <NavigationContainer>
             <RootNavigator />
-            <StatusBar style="auto" />
+            <StatusBar style="dark" backgroundColor={colors.white} />
           </NavigationContainer>
         </ToastProvider>
       </AuthProvider>

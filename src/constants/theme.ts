@@ -24,6 +24,7 @@ export const fonts = {
   bodyRegular: "Manrope_400Regular",
   bodyMedium: "Manrope_500Medium",
   bodySemiBold: "Manrope_600SemiBold",
+  bodyBold: "Manrope_700Bold", // heaviest body weight
 };
 
 export const radii = {

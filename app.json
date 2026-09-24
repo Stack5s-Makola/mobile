@@ -4,7 +4,7 @@
     "slug": "makola-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -32,6 +32,10 @@
           "cameraPermission": "Makola uses your camera to take listing photos and verification selfies."
         }
       ]
-    ]
+    ],
+    "androidStatusBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    }
   }
 }

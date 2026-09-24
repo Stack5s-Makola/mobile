@@ -83,6 +83,36 @@ export interface DashboardListing {
   status: ListingApprovalStatus;
 }
 
+// GET /api/buyer/products/:id - confirmed live. Works with a seller's token
+// and returns their own pending products, so the seller side uses it to show
+// a listing exactly as a buyer would see it.
+//
+// location is coordinates only - no place name.
+//
+// description is optional because the API does not return it yet: /api/seller/add
+// accepts the field without complaint but drops it, and this payload has no
+// `description` key at all. Declared so the screen lights up the moment the
+// backend starts sending one.
+export interface ProductDetails {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  image: string | null;
+  category: string | null;
+  subcategory: string | null;
+  tags: string[];
+  status: ListingApprovalStatus;
+  listedAt: string | null;
+  seller: { id: string; shopName: string | null } | null;
+  shop: {
+    id: string;
+    shopName: string | null;
+    logo: string | null;
+    verificationStatus: string | null;
+  } | null;
+}
+
 export interface SellerDashboardData {
   name: string;
   avatar: string | null;
