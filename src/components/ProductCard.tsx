@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.9 },
   imageTile: {
     backgroundColor: colors.white,
-    borderRadius: 8,
+    borderRadius: radii.card,
     aspectRatio: 1.08,
     alignItems: "center",
     justifyContent: "center",

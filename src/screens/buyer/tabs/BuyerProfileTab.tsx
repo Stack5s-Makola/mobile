@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   rowIcon: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: radii.card,
     backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
     backgroundColor: colors.white,
-    borderRadius: 10,
+    borderRadius: radii.button,
     paddingHorizontal: 14,
     fontFamily: fonts.bodyRegular,
     color: colors.text,

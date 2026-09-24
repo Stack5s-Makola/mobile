@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -91,55 +100,66 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Pressable onPress={() => navigation.goBack()} style={styles.back}>
-        <ArrowLeft size={28} color={colors.text} />
-      </Pressable>
-      <Text style={styles.title}>Set up your profile</Text>
-      <Text style={styles.subtitle}>Tell us a little about yourself</Text>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <Pressable onPress={() => navigation.goBack()} style={styles.back}>
+            <ArrowLeft size={28} color={colors.text} />
+          </Pressable>
+          <Text style={styles.title}>Set up your profile</Text>
+          <Text style={styles.subtitle}>Tell us a little about yourself</Text>
 
-      <View style={styles.photoSection}>
-        <Pressable style={styles.photoCircle} onPress={handlePickPhoto}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.photoImage} />
-          ) : (
-            <Camera size={32} color={colors.primary} />
-          )}
-        </Pressable>
-        <Pressable style={styles.uploadButton} onPress={handlePickPhoto}>
-          <Camera size={16} color={colors.white} />
-          <Text style={styles.uploadLabel}>
-            {photoUri ? "Change photo" : "Upload a photo"}
-          </Text>
-        </Pressable>
-      </View>
+          <View style={styles.photoSection}>
+            <Pressable style={styles.photoCircle} onPress={handlePickPhoto}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={styles.photoImage} />
+              ) : (
+                <Camera size={32} color={colors.primary} />
+              )}
+            </Pressable>
+            <Pressable style={styles.uploadButton} onPress={handlePickPhoto}>
+              <Camera size={16} color={colors.white} />
+              <Text style={styles.uploadLabel}>
+                {photoUri ? "Change photo" : "Upload a photo"}
+              </Text>
+            </Pressable>
+          </View>
 
-      <View style={styles.form}>
-        <View>
-          <Text style={styles.fieldQuestion}>What should we call you?</Text>
-          <AppTextInput
-            placeholder="Enter your name"
-            value={fullName}
-            onChangeText={setFullName}
-          />
-        </View>
-        <View>
-          <Text style={styles.fieldQuestion}>Where do you live?</Text>
-          <AppTextInput
-            placeholder="Enter your location"
-            value={location}
-            onChangeText={setLocation}
-          />
-        </View>
-      </View>
+          <View style={styles.form}>
+            <View>
+              <Text style={styles.fieldQuestion}>What should we call you?</Text>
+              <AppTextInput
+                placeholder="Enter your name"
+                value={fullName}
+                onChangeText={setFullName}
+              />
+            </View>
+            <View>
+              <Text style={styles.fieldQuestion}>Where do you live?</Text>
+              <AppTextInput
+                placeholder="Enter your location"
+                value={location}
+                onChangeText={setLocation}
+              />
+            </View>
+          </View>
 
-      <View style={styles.footer}>
-        <PrimaryButton
-          label="Continue"
-          onPress={handleContinue}
-          disabled={!canSubmit}
-          loading={isLoading}
-        />
-      </View>
+          <View style={styles.footer}>
+            <PrimaryButton
+              label="Continue"
+              onPress={handleContinue}
+              disabled={!canSubmit}
+              loading={isLoading}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -151,6 +171,8 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 40,
   },
+  keyboardAvoidingView: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 16 },
   back: { marginBottom: 24 },
   title: { fontSize: 24, fontFamily: fonts.headline, color: colors.primary },
   subtitle: {

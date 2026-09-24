@@ -23,6 +23,12 @@
       "expo-secure-store",
       "expo-sqlite",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Makola uses your location to show your current area."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Makola uses your photos to let you set a profile picture, add listing photos, and upload verification documents.",

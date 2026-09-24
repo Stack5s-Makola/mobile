@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 6,
     aspectRatio: 1.2,
-    borderRadius: 8,
+    borderRadius: radii.card,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",

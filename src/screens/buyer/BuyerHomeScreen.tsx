@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import * as Location from "expo-location";
 import {
   View,
   Text,
@@ -10,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, Bell, MapPin, ChevronDown } from "lucide-react-native";
+import { Search, Bell, MapPin } from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
@@ -23,6 +24,47 @@ export function BuyerHomeScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState("Locating...");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCurrentLocation = async () => {
+      try {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) {
+          if (isMounted) setCurrentLocation("Location unavailable");
+          return;
+        }
+
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const places = await Location.reverseGeocodeAsync({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        const place = places[0];
+        const readableLocation =
+          place?.district ??
+          place?.city ??
+          place?.subregion ??
+          place?.region ??
+          place?.country ??
+          "Location unavailable";
+
+        if (isMounted) setCurrentLocation(readableLocation);
+      } catch {
+        if (isMounted) setCurrentLocation("Location unavailable");
+      }
+    };
+
+    loadCurrentLocation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const loadListings = useCallback(
     async (isRefresh = false) => {
@@ -85,11 +127,10 @@ export function BuyerHomeScreen({ navigation }: any) {
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.locationLabel}>Current Location</Text>
-                <Pressable style={styles.locationValueRow}>
+                <View style={styles.locationValueRow}>
                   <MapPin size={16} color={colors.primary} />
-                  <Text style={styles.locationValue}>Madina</Text>
-                  <ChevronDown size={16} color={colors.primary} />
-                </Pressable>
+                  <Text style={styles.locationValue}>{currentLocation}</Text>
+                </View>
               </View>
               <Pressable style={styles.bellButton}>
                 <Bell size={20} color={colors.primary} />
@@ -175,7 +216,7 @@ const styles = StyleSheet.create({
   bellButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.button,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
@@ -184,7 +225,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.white,
+    backgroundColor: colors.neutralSoft,
+    borderWidth: 1,
+    borderColor: colors.divider,
     borderRadius: radii.button,
     paddingHorizontal: 16,
     height: 48,

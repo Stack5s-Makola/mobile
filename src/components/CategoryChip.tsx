@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
-import { colors, fonts } from "@constants/theme";
+import { colors, fonts, radii } from "@constants/theme";
 import type { LucideIcon } from "lucide-react-native";
 
 type Props = {
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: radii.button,
     marginRight: 8,
   },
   chipActive: { backgroundColor: colors.primary },
