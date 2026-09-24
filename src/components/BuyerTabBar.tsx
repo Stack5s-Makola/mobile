@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Home, Search, Bookmark, User } from "lucide-react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { fonts } from "@constants/theme";
+import { colors, fonts, radii } from "@constants/theme";
 
 // Custom floating pill tab bar matching Figma's "BUYER NAV" component -
 // the default React Navigation tab bar can't produce this rounded,
@@ -16,8 +16,8 @@ const ICONS: Record<string, typeof Home> = {
   Profile: User,
 };
 
-const ACTIVE_COLOR = "#01573C";
-const INACTIVE_COLOR = "#686868";
+const ACTIVE_COLOR = colors.primary;
+const INACTIVE_COLOR = colors.textMuted;
 
 export function BuyerTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 75,
+    backgroundColor: colors.white,
+    borderRadius: radii.button,
     paddingVertical: 9,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },

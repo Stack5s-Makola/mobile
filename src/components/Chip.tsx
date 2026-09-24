@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
-import { colors, fonts } from "@constants/theme";
+import { colors, fonts, radii } from "@constants/theme";
 
 type Props = {
   label: string;
@@ -20,14 +20,16 @@ export function Chip({ label, selected = false, onPress }: Props) {
         pressed && styles.pressed,
       ]}
     >
-      <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
+      <Text style={[styles.label, selected && styles.labelSelected]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   chip: {
-    borderRadius: 18,
+    borderRadius: radii.button,
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 8,

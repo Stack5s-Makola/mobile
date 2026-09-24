@@ -9,7 +9,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 export async function apiRequest<T>(
   path: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<ApiResponse<T>> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
@@ -22,7 +22,7 @@ export async function apiRequest<T>(
 // endpoints behind the backend's auth guard (seller, profile, etc).
 export async function authedApiRequest<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
   const session = await readStoredSession();
   return apiRequest<T>(path, {
@@ -33,4 +33,18 @@ export async function authedApiRequest<T>(
       ...(options.headers as Record<string, string> | undefined),
     },
   });
+}
+
+export async function authedFormDataRequest<T>(
+  path: string,
+  body: FormData,
+  method: "POST" | "PATCH" = "PATCH",
+): Promise<ApiResponse<T>> {
+  const session = await readStoredSession();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: session ? { Authorization: `Bearer ${session.accessToken}` } : {},
+    body,
+  });
+  return res.json();
 }

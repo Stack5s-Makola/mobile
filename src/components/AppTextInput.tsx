@@ -1,6 +1,12 @@
 import React from "react";
-import { View, Text, TextInput, TextInputProps, StyleSheet } from "react-native";
-import { colors, fonts } from "@constants/theme";
+import {
+  View,
+  Text,
+  TextInput,
+  TextInputProps,
+  StyleSheet,
+} from "react-native";
+import { colors, fonts, radii } from "@constants/theme";
 
 type Props = TextInputProps & {
   label?: string;
@@ -14,8 +20,12 @@ export function AppTextInput({ label, icon, style, ...rest }: Props) {
       <View style={styles.inputRow}>
         {icon ? <View style={styles.icon}>{icon}</View> : null}
         <TextInput
-          style={[styles.input, icon ? styles.inputWithIcon : null, style as object]}
-          placeholderTextColor="#a7a0a0"
+          style={[
+            styles.input,
+            icon ? styles.inputWithIcon : null,
+            style as object,
+          ]}
+          placeholderTextColor={colors.textMuted}
           {...rest}
         />
       </View>
@@ -35,8 +45,8 @@ const styles = StyleSheet.create({
   icon: { position: "absolute", left: 14, zIndex: 1 },
   input: {
     borderWidth: 1,
-    borderColor: "#a7a0a0",
-    borderRadius: 10,
+    borderColor: colors.divider,
+    borderRadius: radii.button,
     paddingHorizontal: 14,
     height: 52,
     fontSize: 14,

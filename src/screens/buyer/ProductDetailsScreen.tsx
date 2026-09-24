@@ -11,10 +11,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { ArrowLeft, Heart, MapPin, ShieldCheck, Phone, BookmarkPlus, BookmarkCheck } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Heart,
+  MapPin,
+  ShieldCheck,
+  Phone,
+  BookmarkPlus,
+  BookmarkCheck,
+} from "lucide-react-native";
 import { StatusBadge } from "@components/StatusBadge";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "@types/listing";
+import { Listing } from "../../types/listing";
 import { getCategoryLabel } from "@constants/categories";
 import { listingService } from "@services/listingService";
 import { savedService } from "@services/savedService";
@@ -24,7 +32,10 @@ import { BuyerStackProps } from "@navigation/buyerRoutes";
 // pixel-for-pixel against Figma's "product details" frame - the Figma MCP
 // connector hit its rate limit mid-build. Refine once that resets.
 
-export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"ProductDetails">) {
+export function ProductDetailsScreen({
+  route,
+  navigation,
+}: BuyerStackProps<"ProductDetails">) {
   const { listingId } = route.params;
   const [listing, setListing] = useState<Listing | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,20 +58,26 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      savedService.getSavedProductIds().then((res) => {
-        if (!cancelled && res.success) setIsProductSaved(res.data.includes(listingId));
+      savedService.getSavedProducts().then((res) => {
+        if (!cancelled && res.success) {
+          setIsProductSaved(
+            res.data.some((product) => product.id === listingId),
+          );
+        }
       });
       if (listing) {
-        savedService.getSavedSellers().then((res) => {
+        savedService.getSavedShops().then((res) => {
           if (!cancelled && res.success) {
-            setIsSellerSaved(res.data.some((s) => s.phone === listing.sellerPhone));
+            setIsSellerSaved(
+              res.data.some((shop) => shop.phone === listing.sellerPhone),
+            );
           }
         });
       }
       return () => {
         cancelled = true;
       };
-    }, [listingId, listing])
+    }, [listingId, listing]),
   );
 
   async function handleToggleSaveProduct() {
@@ -70,7 +87,7 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
 
   async function handleToggleSaveSeller() {
     if (!listing) return;
-    const res = await savedService.toggleSavedSeller({
+    const res = await savedService.toggleSavedShop({
       name: listing.sellerName,
       phone: listing.sellerPhone,
     });
@@ -101,17 +118,33 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.imageWrapper}>
-          <Image source={{ uri: listing.mainImage }} style={styles.image} resizeMode="cover" />
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Image
+            source={{ uri: listing.mainImage }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          <Pressable
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
-          <Pressable style={styles.saveButton} onPress={handleToggleSaveProduct}>
-            <Heart size={20} color={colors.primary} fill={isProductSaved ? colors.primary : "transparent"} />
+          <Pressable
+            style={styles.saveButton}
+            onPress={handleToggleSaveProduct}
+          >
+            <Heart
+              size={20}
+              color={colors.primary}
+              fill={isProductSaved ? colors.primary : "transparent"}
+            />
           </Pressable>
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.category}>{getCategoryLabel(listing.category)}</Text>
+          <Text style={styles.category}>
+            {getCategoryLabel(listing.category)}
+          </Text>
           <Text style={styles.name}>{listing.name}</Text>
           <Text style={styles.price}>GHS {listing.price.toFixed(2)}</Text>
 
@@ -122,7 +155,9 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
 
           <View style={styles.sellerCard}>
             <View style={styles.sellerAvatar}>
-              <Text style={styles.sellerInitial}>{listing.sellerName.charAt(0)}</Text>
+              <Text style={styles.sellerInitial}>
+                {listing.sellerName.charAt(0)}
+              </Text>
             </View>
             <View style={styles.flex}>
               <Text style={styles.sellerName}>{listing.sellerName}</Text>
@@ -133,7 +168,10 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
                 </View>
               ) : null}
             </View>
-            <Pressable style={styles.saveContactButton} onPress={handleToggleSaveSeller}>
+            <Pressable
+              style={styles.saveContactButton}
+              onPress={handleToggleSaveSeller}
+            >
               {isSellerSaved ? (
                 <BookmarkCheck size={20} color={colors.primary} />
               ) : (
@@ -163,9 +201,14 @@ export function ProductDetailsScreen({ route, navigation }: BuyerStackProps<"Pro
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  loading: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
   notFound: { fontFamily: fonts.bodyMedium, color: colors.textMuted },
-  content: { paddingBottom: 100 },
+  content: { paddingBottom: 132 },
   flex: { flex: 1 },
   imageWrapper: { position: "relative" },
   image: { width: "100%", aspectRatio: 1, backgroundColor: colors.neutralSoft },
@@ -175,7 +218,7 @@ const styles = StyleSheet.create({
     left: 16,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.button,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
@@ -186,17 +229,40 @@ const styles = StyleSheet.create({
     right: 16,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radii.button,
     backgroundColor: colors.white,
     alignItems: "center",
     justifyContent: "center",
   },
-  body: { padding: 20, gap: 4 },
-  category: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.textMuted },
-  name: { fontSize: 22, fontFamily: fonts.headline, color: colors.primary, marginTop: 2 },
-  price: { fontSize: 20, fontFamily: fonts.bodySemiBold, color: colors.primary, marginTop: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
-  locationText: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  body: { padding: 18, gap: 4 },
+  category: {
+    fontSize: 13,
+    fontFamily: fonts.bodyMedium,
+    color: colors.textMuted,
+  },
+  name: {
+    fontSize: 22,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+    marginTop: 2,
+  },
+  price: {
+    fontSize: 20,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.primary,
+    marginTop: 4,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+  },
+  locationText: {
+    fontSize: 14,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
   sellerCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -214,13 +280,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sellerInitial: { fontSize: 18, fontFamily: fonts.headline, color: colors.primary },
-  sellerName: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
-  verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  sellerInitial: {
+    fontSize: 18,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+  },
+  sellerName: {
+    fontSize: 15,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.text,
+  },
+  verifiedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
   saveContactButton: { padding: 6 },
   descriptionBlock: { marginTop: 20 },
-  sectionHeader: { fontSize: 15, fontFamily: fonts.headline, color: colors.primary, marginBottom: 6 },
-  description: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text, lineHeight: 20 },
+  sectionHeader: {
+    fontSize: 15,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+    marginBottom: 6,
+  },
+  description: {
+    fontSize: 14,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+    lineHeight: 20,
+  },
   footer: {
     position: "absolute",
     bottom: 0,
@@ -238,5 +327,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.button,
     backgroundColor: colors.primary,
   },
-  contactLabel: { fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.white },
+  contactLabel: {
+    fontSize: 16,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.white,
+  },
 });

@@ -1,7 +1,16 @@
+import {
+  Apple,
+  Brush,
+  Cpu,
+  Gem,
+  Shirt,
+  type LucideIcon,
+} from "lucide-react-native";
+
 export interface Category {
   id: string;
   label: string;
-  icon: string; // emoji - simple, no extra asset/icon-library dependency
+  icon: LucideIcon;
 }
 
 // Canonical category list. Figma's Home chip row and Categories screen use
@@ -10,11 +19,11 @@ export interface Category {
 // types named in the business overview doc. Worth flagging to Charity to
 // reconcile in the source designs.
 export const CATEGORIES: Category[] = [
-  { id: "fabrics", label: "Fabrics", icon: "🧵" },
-  { id: "handicraft", label: "Handicraft", icon: "🪵" },
-  { id: "beauty", label: "Beauty", icon: "💄" },
-  { id: "farm-produce", label: "Farm Produce", icon: "🥭" },
-  { id: "electronics", label: "Electronics", icon: "📱" },
+  { id: "fabrics", label: "Fabrics", icon: Shirt },
+  { id: "handicraft", label: "Handicraft", icon: Gem },
+  { id: "beauty", label: "Beauty", icon: Brush },
+  { id: "farm-produce", label: "Farm Produce", icon: Apple },
+  { id: "electronics", label: "Electronics", icon: Cpu },
 ];
 
 export function getCategoryLabel(id: string): string {
