@@ -21,6 +21,7 @@ import {
   ResendOtpResult,
   RegisterBuyerPayload,
   RegisterBuyerResult,
+  LoginResult,
 } from "@types/auth";
 
 // // Real backend calls. Same function names/signatures as
@@ -198,4 +199,20 @@ export function resendOtp(email: string): Promise<ApiResponse<ResendOtpResult>> 
     method: "POST",
     body: JSON.stringify({ email: email.trim() }),
   });
+}
+
+// POST /api/login - email + password, returns only a token and role.
+export function login(payload: LoginPayload): Promise<ApiResponse<LoginResult>> {
+  return apiRequest("/api/login", { method: "POST", body: JSON.stringify(payload) });
+}
+
+// POST /api/reset-password - userId + new password. NOTE: Daniel's
+// contract has no endpoint for *triggering* a reset (requesting the OTP) -
+// only this finishing step. Worth asking him directly: does
+// /api/verify-otp/resend double as the trigger, or is there a missing
+// endpoint for that first step?
+export function resetPassword(
+  payload: ResetPasswordPayload
+): Promise<ApiResponse<{ success: true }>> {
+  return apiRequest("/api/reset-password", { method: "POST", body: JSON.stringify(payload) });
 }

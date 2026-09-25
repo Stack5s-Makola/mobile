@@ -178,3 +178,13 @@ export interface ResetPasswordPayload {
   userId: string;
   newPassword: string;
 }
+
+// POST /api/login. Returns only a token and role - no profile fields, so
+// the full user object still needs a follow-up authenticated call (e.g.
+// GET /api/buyer/my-profile/personal-details) once this token is stored
+// and authedApiRequest can attach it.
+export interface LoginResult {
+  accessToken: string;
+  refreshToken?: string;
+  role: UserRole;
+}
