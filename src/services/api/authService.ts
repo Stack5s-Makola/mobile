@@ -21,6 +21,7 @@ import {
   ResendOtpResult,
   RegisterBuyerPayload,
   RegisterBuyerResult,
+  LoginResult,
 } from "@types/auth";
 
 // // Real backend calls. Same function names/signatures as
