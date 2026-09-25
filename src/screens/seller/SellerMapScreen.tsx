@@ -17,6 +17,7 @@ import { colors, fonts } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
 import { initials } from "@utils/format";
 import { ensureOfflinePack, OFFLINE_RADIUS_KM } from "@services/db/mapCache";
+import { SyncBanner, SyncStatus } from "@components/SyncBanner";
 import { SellerStackProps } from "@navigation/sellerRoutes";
 
 // Mapbox is initialised once per app load, not per render. The public token
@@ -47,7 +48,8 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
   const { session } = useAuth();
   const user = session?.user;
   const [isExpanded, setIsExpanded] = useState(false);
-  const [offlineProgress, setOfflineProgress] = useState<number | null>(null);
+  const [offlineProgress, setOfflineProgress] = useState(0);
+  const [downloadStatus, setDownloadStatus] = useState<SyncStatus>("idle");
   const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
 
   useEffect(() => {
@@ -95,9 +97,24 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
   const userId = user?.id;
   useEffect(() => {
     if (!centre || !userId) return;
-    ensureOfflinePack(userId, centre, (percentage) =>
-      setOfflineProgress(percentage >= 100 ? null : percentage)
-    );
+    let cancelled = false;
+
+    setOfflineProgress(0);
+    setDownloadStatus("syncing");
+
+    ensureOfflinePack(userId, centre, (percentage) => {
+      if (cancelled) return;
+      setOfflineProgress(percentage);
+      if (percentage >= 100) setDownloadStatus("done");
+    }).then((outcome) => {
+      // Nothing was fetched, so there is no progress to report - drop the
+      // banner rather than leaving it spinning.
+      if (!cancelled && outcome !== "downloading") setDownloadStatus("idle");
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [centre, userId]);
 
   return (
@@ -141,6 +158,12 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
           <ActivityIndicator size="large" color={ORANGE} />
         </View>
       )}
+
+      <SyncBanner
+        status={downloadStatus}
+        syncingMessage={`Saving ${OFFLINE_RADIUS_KM}km offline… ${Math.round(offlineProgress)}%`}
+        doneMessage="Map saved for offline use"
+      />
 
       {/* box-none so taps fall through to the map everywhere except the
           controls themselves. */}
@@ -191,11 +214,6 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
           </Text>
         </View>
 
-        {offlineProgress !== null ? (
-          <Text style={styles.sheetProgress}>
-            Saving {OFFLINE_RADIUS_KM}km for offline use… {Math.round(offlineProgress)}%
-          </Text>
-        ) : null}
       </Animated.View>
     </View>
   );
@@ -254,12 +272,6 @@ const styles = StyleSheet.create({
   },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
   sheetLocation: { flex: 1, fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.text },
-  sheetProgress: {
-    marginTop: 8,
-    fontSize: 13,
-    fontFamily: fonts.bodyRegular,
-    color: colors.textMuted,
-  },
   sheetHandle: {
     alignSelf: "center",
     width: 36,

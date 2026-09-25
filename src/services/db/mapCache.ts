@@ -8,10 +8,10 @@ import { getDatabase } from "./database";
 // answer "is this place already offline?" without hitting the native store,
 // and so a pack isn't downloaded twice.
 
-// 4km around the seller: enough to cover their neighbourhood without pulling
-// down a large pack. Zoom 16 is roughly street level; going past it multiplies
-// the tile count fast (Mapbox caps a pack at 6000 tiles).
-export const OFFLINE_RADIUS_KM = 4;
+// 2km around the seller - about 80 tiles (~4MB). Zoom 16 is roughly street
+// level; each level past it quadruples the tile count, and Mapbox caps a pack
+// at 6000 tiles.
+export const OFFLINE_RADIUS_KM = 2;
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 16;
 
@@ -120,11 +120,13 @@ async function savePack(
  * already covers it. Resolves once the download has been *started*; progress
  * arrives through `onProgress`.
  */
+export type OfflinePackOutcome = "cached" | "downloading" | "failed";
+
 export async function ensureOfflinePack(
   userId: string,
   [longitude, latitude]: [number, number],
   onProgress?: (percentage: number) => void
-): Promise<void> {
+): Promise<OfflinePackOutcome> {
   const name = packNameFor(userId);
 
   try {
@@ -132,7 +134,7 @@ export async function ensureOfflinePack(
     if (existing && existing.status === "ready") {
       const movedKm = distanceKm(longitude, latitude, existing.longitude, existing.latitude);
       // Still inside what we already hold - nothing to do.
-      if (movedKm < OFFLINE_RADIUS_KM / 2) return;
+      if (movedKm < OFFLINE_RADIUS_KM / 2) return "cached";
       // They've moved on; drop the old area before taking a new one.
       await Mapbox.offlineManager.deletePack(name).catch(() => {});
     }
@@ -157,9 +159,11 @@ export async function ensureOfflinePack(
         savePack(userId, name, longitude, latitude, "failed").catch(() => {});
       }
     );
+    return "downloading";
   } catch (err) {
     // Offline maps are a bonus - never let a failure here break the screen.
     console.warn("Couldn't prepare the offline map", err);
     await savePack(userId, name, longitude, latitude, "failed").catch(() => {});
+    return "failed";
   }
 }
