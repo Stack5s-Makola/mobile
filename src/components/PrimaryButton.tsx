@@ -34,15 +34,14 @@ export function PrimaryButton({ label, loading, disabled, variant = "solid", sty
 const styles = StyleSheet.create({
   button: {
     borderRadius: radii.button,
-    borderWidth: 3,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
     height: 54,
   },
-  solid: { backgroundColor: colors.primary, borderColor: colors.primary },
-  outline: { backgroundColor: "transparent", borderColor: colors.primary },
+  solid: { backgroundColor: colors.primary, borderWidth: 0 },
+  outline: { backgroundColor: "transparent", borderColor: colors.primary, borderWidth: 3 },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.85 },
   label: { color: colors.white, fontSize: 16, fontFamily: fonts.bodySemiBold },

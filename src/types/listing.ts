@@ -7,6 +7,8 @@ export interface Listing {
   sellerPhone: string;
   sellerVerified: boolean;
   category: string; // category id - see src/constants/categories.ts
-  location: string; // city/area, e.g. "Madina"
+  location: string; // place name, e.g. "Ussher Town, Accra"
+  // Present when the request carried a latitude/longitude to measure from.
+  distanceKm?: number | null;
   description?: string;
 }

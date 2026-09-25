@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ArrowLeft,
   ChevronRight,
@@ -37,6 +38,30 @@ export function SellerProfileScreen({ navigation }: SellerTabProps<"Profile">) {
   const user = session?.user;
   const businessName = user?.businessName;
   const [photoUri, setPhotoUri] = useState(user?.photoUri);
+
+  // Signing in returns no photo - POST /api/login only sends back a token,
+  // email, role and emailVerified - so the session has none until the seller
+  // uploads one in this install. The dashboard is the only endpoint that
+  // reports the stored avatar, so read it from there and cache it on the
+  // session for the rest of the app.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      apiSellerService
+        .getDashboard()
+        .then((res) => {
+          if (cancelled || !res.success || !res.data.avatar) return;
+          setPhotoUri(res.data.avatar);
+          if (res.data.avatar !== user?.photoUri) {
+            updateUser({ photoUri: res.data.avatar }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [user?.photoUri, updateUser])
+  );
   // A picture chosen but not uploaded yet. Its presence is what reveals Save.
   const [pendingUri, setPendingUri] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);

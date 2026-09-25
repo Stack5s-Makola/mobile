@@ -10,12 +10,11 @@ import {
   Easing,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, MapPin } from "lucide-react-native";
+import { ArrowLeft, MapPin, Store } from "lucide-react-native";
 import Mapbox, { Camera, MapView, MarkerView, UserLocation } from "@rnmapbox/maps";
 import * as Location from "expo-location";
 import { colors, fonts } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
-import { initials } from "@utils/format";
 import { ensureOfflinePack, OFFLINE_RADIUS_KM } from "@services/db/mapCache";
 import { SyncBanner, SyncStatus } from "@components/SyncBanner";
 import * as nearbyService from "@services/api/nearbyService";
@@ -176,30 +175,13 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
                   {shop.logo ? (
                     <Image source={{ uri: shop.logo }} style={styles.markerImage} />
                   ) : (
-                    <Text style={styles.otherMarkerInitials}>
-                      {initials(shop.shopName ?? undefined)}
-                    </Text>
+                    // No logo uploaded - a shop icon reads better than initials.
+                    <Store size={18} color={colors.white} />
                   )}
                 </View>
               </MarkerView>
             ))}
 
-          <MarkerView coordinate={centre}>
-            {/* Tapping the seller toggles the expanded sheet. */}
-            <Pressable
-              style={({ pressed }) => [styles.marker, pressed && styles.markerPressed]}
-              onPress={() => setIsExpanded((expanded) => !expanded)}
-              accessibilityRole="button"
-              accessibilityLabel={isExpanded ? "Hide shop details" : "Show shop details"}
-              accessibilityState={{ expanded: isExpanded }}
-            >
-              {user?.photoUri ? (
-                <Image source={{ uri: user.photoUri }} style={styles.markerImage} />
-              ) : (
-                <Text style={styles.markerInitials}>{initials(user?.businessName)}</Text>
-              )}
-            </Pressable>
-          </MarkerView>
         </MapView>
       ) : (
         <View style={styles.loading}>
@@ -337,26 +319,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: "#D8DCDA",
   },
-  // The seller's own avatar, ringed so it stays legible over the map.
-  marker: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: ORANGE,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 3,
-    borderColor: ORANGE,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  markerPressed: { opacity: 0.85 },
-  // Other shops: smaller and in the brand green, so the seller's own marker
-  // still reads as "you".
   otherMarker: {
     width: 36,
     height: 36,
@@ -368,7 +330,5 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.white,
   },
-  otherMarkerInitials: { fontSize: 12, fontFamily: fonts.headline, color: colors.white },
   markerImage: { width: "100%", height: "100%" },
-  markerInitials: { fontSize: 16, fontFamily: fonts.headline, color: colors.white },
 });

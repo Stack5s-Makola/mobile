@@ -8,10 +8,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
@@ -33,11 +36,41 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
   };
   const { showToast } = useToast();
   const [fullName, setFullName] = useState("");
-  const [location, setLocation] = useState("");
+  const [coordinates, setCoordinates] = useState<
+    { latitude: number; longitude: number } | null
+  >(null);
+  const [isLocating, setIsLocating] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
 
-  const canSubmit = fullName.length > 0 && location.length > 0;
+  const canSubmit = fullName.length > 0 && coordinates !== null;
+
+  async function handleUseCurrentLocation() {
+    setIsLocating(true);
+    try {
+      const { granted } = await Location.requestForegroundPermissionsAsync();
+      if (!granted) {
+        showToast("Allow location access, or pick your spot on the map.", "error");
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({});
+      setCoordinates({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+    } catch {
+      showToast("Couldn't get your location. Try the map instead.", "error");
+    } finally {
+      setIsLocating(false);
+    }
+  }
+
+  function handlePickOnMap() {
+    navigation.navigate("LocationPicker", {
+      initial: coordinates ?? undefined,
+      onPicked: setCoordinates,
+    });
+  }
 
   async function handlePickPhoto() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -75,7 +108,7 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
           purpose: "buyerRegister",
           profile: {
             fullName: fullName.trim(),
-            location: location.trim(),
+            location: `${coordinates!.latitude.toFixed(4)}, ${coordinates!.longitude.toFixed(4)}`,
             photoUri,
           },
           issued: {
@@ -143,11 +176,37 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
             </View>
             <View>
               <Text style={styles.fieldQuestion}>Where do you live?</Text>
-              <AppTextInput
-                placeholder="Enter your location"
-                value={location}
-                onChangeText={setLocation}
-              />
+              <View style={styles.locationRow}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.locationButton,
+                    coordinates && styles.locationButtonSet,
+                    pressed && styles.pressed,
+                  ]}
+                  onPress={handleUseCurrentLocation}
+                  disabled={isLocating}
+                  accessibilityRole="button"
+                >
+                  {isLocating ? (
+                    <ActivityIndicator size="small" color={GREEN} />
+                  ) : (
+                    <Text style={styles.locationButtonLabel} numberOfLines={1}>
+                      {coordinates
+                        ? `${coordinates.latitude.toFixed(4)}, ${coordinates.longitude.toFixed(4)}`
+                        : "Use my current location"}
+                    </Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [styles.mapButton, pressed && styles.pressed]}
+                  onPress={handlePickOnMap}
+                  accessibilityRole="button"
+                  accessibilityLabel="Pick location on the map"
+                >
+                  <MaterialCommunityIcons name="map-marker-radius" size={24} color={colors.white} />
+                </Pressable>
+              </View>
             </View>
           </View>
 
@@ -157,6 +216,7 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
               onPress={handleContinue}
               disabled={!canSubmit}
               loading={isLoading}
+              style={styles.continueButton}
             />
           </View>
         </ScrollView>
@@ -164,6 +224,9 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
     </SafeAreaView>
   );
 }
+
+// Same green as the rest of the seller screens.
+const GREEN = "#1CA30A";
 
 const styles = StyleSheet.create({
   container: {
@@ -217,5 +280,30 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginBottom: 8,
   },
-  footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16 },
+  locationRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
+  // 70% of the row, with the map button taking the rest.
+  locationButton: {
+    flex: 0.7,
+    minHeight: 52,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#a7a0a0",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  locationButtonSet: { borderColor: GREEN },
+  locationButtonLabel: { fontSize: 14, fontFamily: fonts.bodyMedium, color: colors.text },
+  mapButton: {
+    flex: 0.3,
+    minHeight: 52,
+    borderRadius: 10,
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: { opacity: 0.85 },
+  footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16, paddingTop: 28 },
+  // PrimaryButton draws a 3px border in the theme colour; this drops it.
+  continueButton: { borderWidth: 0 },
 });

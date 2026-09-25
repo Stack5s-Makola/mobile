@@ -47,7 +47,12 @@ export function RoleSelectionScreen({ navigation }: any) {
       />
 
       <View style={styles.footer}>
-        <PrimaryButton label="Continue" onPress={handleContinue} disabled={!selectedRole} />
+        <PrimaryButton
+          label="Continue"
+          onPress={handleContinue}
+          disabled={!selectedRole}
+          style={styles.continueButton}
+        />
       </View>
     </SafeAreaView>
   );
@@ -100,4 +105,5 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 20, fontFamily: fonts.headline, color: colors.primary },
   cardDescription: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text, marginTop: 4 },
   footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16 },
+  continueButton: { borderWidth: 0 },
 });

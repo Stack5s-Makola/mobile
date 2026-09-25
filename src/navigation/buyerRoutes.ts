@@ -18,6 +18,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 // ├── Categories (full screen, opened from Home's "View All")
 // └── ProductDetails (full screen, opened from any product card)
 // └── Notifications (full screen, opened from Home or Profile)
+// └── BuyerMap (full screen, from the Home map button)
+// └── BuyerName / BuyerPhone / BuyerPassword (full screens, from Profile)
 
 export type BuyerTabParamList = {
   Home: undefined;
@@ -31,6 +33,10 @@ export type BuyerStackParamList = {
   Categories: { categoryId?: string } | undefined;
   ProductDetails: { listingId: string };
   Notifications: undefined;
+  BuyerMap: undefined;
+  BuyerName: undefined;
+  BuyerPhone: undefined;
+  BuyerPassword: undefined;
 };
 
 export type BuyerStackProps<T extends keyof BuyerStackParamList> =

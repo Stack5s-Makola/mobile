@@ -3,6 +3,7 @@ import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { ArrowUpRight, MapPin } from "lucide-react-native";
 import { Listing } from "../types/listing";
 import { colors, fonts, radii } from "@constants/theme";
+import { formatDistance } from "@utils/geo";
 
 type Props = {
   listing: Listing;
@@ -34,6 +35,10 @@ export function ProductCard({ listing, onPress }: Props) {
               ? listing.location
               : "Location unavailable"}
           </Text>
+          {/* Only present when the request carried a point to measure from. */}
+          {listing.distanceKm != null ? (
+            <Text style={styles.distance}>{formatDistance(listing.distanceKm)}</Text>
+          ) : null}
         </View>
       </View>
       <View style={styles.viewButton}>
@@ -43,12 +48,18 @@ export function ProductCard({ listing, onPress }: Props) {
   );
 }
 
+// Matching the seller screens.
+const GREEN = "#1CA30A";
+// Card fill - pinned rather than colors.primarySoft, which the theme change
+// in the merge has already moved once.
+const LIGHT_GREEN = "#E7F6E4";
+
 const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: 6,
     borderRadius: radii.card,
-    backgroundColor: colors.white,
+    backgroundColor: LIGHT_GREEN,
     padding: 10,
     position: "relative",
     minHeight: 232,
@@ -77,6 +88,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
+  distance: { fontSize: 11, fontFamily: fonts.bodySemiBold, color: GREEN },
   location: {
     fontSize: 11,
     fontFamily: fonts.bodyRegular,

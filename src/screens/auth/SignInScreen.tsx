@@ -35,20 +35,46 @@ export function SignInScreen({ navigation }: any) {
     setIsLoading(true);
     try {
       const res = await authService.login({ email, password });
-      if (res.success) {
-        await login(res.data.accessToken, {
-          id: res.data.userId,
-          phone: res.data.phone,
-          email: res.data.email,
-          role: res.data.role,
-          fullName: res.data.fullName,
-          location: res.data.location,
-          businessName: res.data.businessName,
-          photoUri: res.data.photoUri,
-        });
-      } else {
+      if (!res.success) {
         showToast(res.message, "error");
+        return;
       }
+
+      // Signing in emails a fresh code whenever the account isn't verified,
+      // so send them to the OTP screen rather than into the app. The token
+      // rides along unsaved - verifying is what creates the session.
+      if (!res.data.emailVerified) {
+        showToast(res.message, "success");
+        navigation.navigate("OtpVerify", {
+          email: res.data.email,
+          phone: res.data.phone,
+          purpose: res.data.role === "SELLER" ? "sellerRegister" : "buyerRegister",
+          profile: {
+            fullName: res.data.fullName,
+            location: res.data.location,
+            businessName: res.data.businessName,
+            photoUri: res.data.photoUri,
+          },
+          issued: {
+            accessToken: res.data.accessToken,
+            userId: res.data.userId,
+            role: res.data.role,
+          },
+        });
+        return;
+      }
+
+      await login(res.data.accessToken, {
+        id: res.data.userId,
+        phone: res.data.phone,
+        email: res.data.email,
+        role: res.data.role,
+        emailVerified: true,
+        fullName: res.data.fullName,
+        location: res.data.location,
+        businessName: res.data.businessName,
+        photoUri: res.data.photoUri,
+      });
     } finally {
       setIsLoading(false);
     }

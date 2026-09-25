@@ -113,6 +113,7 @@ export async function completeBuyerProfile(
     data: {
       accessToken: `mock-token-${user.id}`,
       refreshToken: `mock-refresh-${user.id}`,
+      emailVerified: user.verified,
       userId: user.id,
       phone: user.phone,
       email: user.email,
@@ -144,6 +145,7 @@ export async function completeSellerProfile(
     data: {
       accessToken: `mock-token-${user.id}`,
       refreshToken: `mock-refresh-${user.id}`,
+      emailVerified: user.verified,
       userId: user.id,
       phone: user.phone,
       email: user.email,
@@ -216,6 +218,7 @@ export async function login(payload: LoginPayload): Promise<ApiResponse<AuthSess
     data: {
       accessToken: `mock-token-${user.id}`,
       refreshToken: `mock-refresh-${user.id}`,
+      emailVerified: user.verified,
       userId: user.id,
       phone: user.phone,
       email: user.email,

@@ -14,6 +14,7 @@ import {
 } from "@types/auth";
 import { UserRole } from "@types/user";
 import { apiRequest, formDataRequest } from "./client";
+import { decodeJwtClaims } from "@utils/jwt";
 import {
   RegisterSellerPayload,
   RegisterSellerResult,
@@ -122,12 +123,12 @@ import {
 // React Native's FormData takes {uri, name, type} in place of a Blob.
 type FormDataFile = { uri: string; name: string; type: string };
 
-function toFilePart(uri: string): FormDataFile {
+function toFilePart(uri: string, baseName = "shop-logo"): FormDataFile {
   const extension = (uri.split(".").pop() ?? "").toLowerCase();
   const safe = /^(jpg|jpeg|png|webp|heic)$/.test(extension) ? extension : "jpg";
   return {
     uri,
-    name: `shop-logo.${safe}`,
+    name: `${baseName}.${safe}`,
     type: safe === "jpg" ? "image/jpeg" : `image/${safe}`,
   };
 }
@@ -158,8 +159,11 @@ export function registerSeller(
 }
 
 // POST /api/register/buyer - creates a buyer account and emails a code.
-// Takes credentials only; there are no profile fields on this endpoint.
 // Like the seller endpoint it issues a token before the email is verified.
+//
+// The file field is `image`, the same name the seller endpoint uses. Anything
+// else is rejected outright with "Unexpected field - <name>" - which fails the
+// whole registration, not just the upload.
 export function registerBuyer(
   payload: RegisterBuyerPayload,
 ): Promise<ApiResponse<RegisterBuyerResult>> {
@@ -169,13 +173,11 @@ export function registerBuyer(
   body.append("password", payload.password);
   body.append("role", "BUYER");
   if (payload.photoUri) {
-    body.append("picture", {
-      uri: payload.photoUri,
-      name: "profile.jpg",
-      type: "image/jpeg",
-    } as unknown as Blob);
+    // Derive the type from the URI rather than always claiming JPEG - a PNG
+    // or HEIC mislabelled as image/jpeg can be rejected on upload.
+    body.append("image", toFilePart(payload.photoUri, "profile") as unknown as Blob);
   }
-  return formDataRequest<RegisterBuyerResult>("/register/buyer", body);
+  return formDataRequest<RegisterBuyerResult>("/api/register/buyer", body);
 }
 
 // POST /api/verify-otp - checks the 6-digit code that was emailed.
@@ -189,7 +191,7 @@ export function registerBuyer(
 export function verifyOtp(
   payload: VerifyEmailOtpPayload,
 ): Promise<ApiResponse<unknown>> {
-  return apiRequest("/verify-otp", {
+  return apiRequest("/api/verify-otp", {
     method: "POST",
     body: JSON.stringify({ email: payload.email.trim(), code: payload.code }),
   });
@@ -203,7 +205,7 @@ export function verifyOtp(
 export function resendOtp(
   email: string,
 ): Promise<ApiResponse<ResendOtpResult>> {
-  return apiRequest("/verify-otp/resend", {
+  return apiRequest("/api/verify-otp/resend", {
     method: "POST",
     body: JSON.stringify({ email: email.trim() }),
   });
@@ -218,6 +220,7 @@ type LoginResponse = {
   email?: string;
   phone?: string;
   role?: UserRole;
+  emailVerified?: boolean;
   fullName?: string;
   location?: string;
   businessName?: string;
@@ -229,13 +232,14 @@ type LoginResponse = {
     role?: UserRole;
     name?: string;
     picture?: string;
+    emailVerified?: boolean;
   };
 };
 
 export async function login(
   payload: LoginPayload,
 ): Promise<ApiResponse<AuthSessionResult>> {
-  const res = await apiRequest<LoginResponse>("/login", {
+  const res = await apiRequest<LoginResponse>("/api/login", {
     method: "POST",
     body: JSON.stringify({
       email: payload.email.trim(),
@@ -246,15 +250,20 @@ export async function login(
 
   const data = res.data;
   const user = data.user;
+  // /api/login returns no user id in its body - only the token carries it,
+  // as the `sub` claim. Without this the session id is "" and screens that
+  // key off it break.
+  const claims = decodeJwtClaims(data.accessToken ?? data.token);
   return {
     ...res,
     data: {
       accessToken: data.accessToken ?? data.token ?? "",
       refreshToken: data.refreshToken ?? "",
-      userId: data.userId ?? data.id ?? user?.id ?? "",
+      emailVerified: data.emailVerified ?? user?.emailVerified ?? false,
+      userId: data.userId || data.id || user?.id || claims.sub || "",
       phone: data.phone ?? user?.phone ?? "",
-      email: data.email ?? user?.email ?? payload.email.trim(),
-      role: data.role ?? user?.role ?? "BUYER",
+      email: data.email || user?.email || claims.email || payload.email.trim(),
+      role: data.role || user?.role || (claims.role as UserRole) || "BUYER",
       fullName: data.fullName ?? user?.name ?? "",
       location: data.location ?? "",
       businessName: data.businessName,
@@ -266,7 +275,7 @@ export async function login(
 export function resetPassword(
   payload: ResetPasswordPayload,
 ): Promise<ApiResponse<{ success: boolean }>> {
-  return apiRequest("/reset-password", {
+  return apiRequest("/api/reset-password", {
     method: "POST",
     body: JSON.stringify(payload),
   });

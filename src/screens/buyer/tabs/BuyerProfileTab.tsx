@@ -1,11 +1,11 @@
 import {
-  Bell,
   Bookmark,
   Camera,
   ChevronRight,
   ContactRound,
   LockKeyhole,
   LogOut,
+  Phone,
   UserRound,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
@@ -13,12 +13,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -27,8 +25,6 @@ import { buyerProfileService } from "@services/buyerProfileService";
 import { pickImage } from "@utils/pickImage";
 import { colors, fonts, radii } from "@constants/theme";
 import { BuyerTabProps } from "@navigation/buyerRoutes";
-
-type Dialog = "personal" | "password" | null;
 
 export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
   const { session, logout } = useAuth();
@@ -41,12 +37,8 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
     phone: session?.user.phone ?? "",
     location: session?.user.location ?? "",
   });
-  const [dialog, setDialog] = useState<Dialog>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -55,14 +47,21 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
     ])
       .then(([profileRes, detailsRes]) => {
         if (profileRes.success) {
-          setName(profileRes.data.name);
-          setImageUri(profileRes.data.picture ?? profileRes.data.image ?? null);
+          setName(profileRes.data.name ?? "");
+          setImageUri(
+            profileRes.data.profilePicture ??
+              profileRes.data.picture ??
+              profileRes.data.image ??
+              null,
+          );
         }
         if (detailsRes.success) {
           setDetails({
             email: detailsRes.data.email ?? "",
             phone: detailsRes.data.phone ?? "",
-            location: detailsRes.data.location ?? "",
+            // personal-details doesn't return a location, so keep whatever
+            // the session already has rather than blanking the field.
+            location: detailsRes.data.location ?? session?.user.location ?? "",
           });
         }
         setIsLoading(false);
@@ -81,57 +80,15 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
       return;
     }
     setIsSaving(true);
-    const res = await buyerProfileService.updateProfile(name, imageUri);
+    const res = await buyerProfileService.updateProfilePicture(imageUri);
     setIsSaving(false);
     if (res.success) {
-      setName(res.data.name);
-      setImageUri(res.data.picture ?? res.data.image ?? imageUri);
+      // Keep the hosted URL, not the local file path - it survives a reinstall.
+      setImageUri(res.data.profilePicture ?? imageUri);
       Alert.alert("Profile updated", "Your profile has been saved.");
     } else Alert.alert("Could not update profile", res.message);
   }
 
-  async function saveDetails() {
-    setIsSaving(true);
-    const res = await buyerProfileService.updatePersonalDetails({
-      name,
-      location: details.location,
-    });
-    setIsSaving(false);
-    if (res.success) {
-      setDetails((current) => ({
-        ...current,
-        location: res.data.location ?? current.location,
-      }));
-      setDialog(null);
-    } else Alert.alert("Could not update details", res.message);
-  }
-
-  async function savePassword() {
-    if (
-      !currentPassword ||
-      newPassword.length < 8 ||
-      newPassword !== confirmPassword
-    ) {
-      Alert.alert(
-        "Check your password",
-        "Use at least 8 characters and make both new passwords match.",
-      );
-      return;
-    }
-    setIsSaving(true);
-    const res = await buyerProfileService.changePassword({
-      currentPassword,
-      newPassword,
-    });
-    setIsSaving(false);
-    if (res.success) {
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setDialog(null);
-      Alert.alert("Password changed", "Your password has been updated.");
-    } else Alert.alert("Could not change password", res.message);
-  }
 
   if (isLoading)
     return <ActivityIndicator style={styles.loading} color={colors.primary} />;
@@ -142,142 +99,73 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>My profile</Text>
-        <Pressable style={styles.avatarButton} onPress={chooseImage}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.avatar} />
-          ) : (
-            <UserRound size={36} color={colors.primary} />
-          )}
-          <View style={styles.cameraBadge}>
-            <Camera size={14} color={colors.white} />
+        <View style={styles.identity}>
+          <View style={styles.avatarWrap}>
+            <View style={styles.avatarButton}>
+              {imageUri ? (
+                <Image source={{ uri: imageUri }} style={styles.avatar} />
+              ) : (
+                <UserRound size={36} color={GREEN} />
+              )}
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.changePhoto, pressed && styles.pressed]}
+              onPress={chooseImage}
+              accessibilityRole="button"
+              accessibilityLabel="Change photo"
+            >
+              <Camera size={13} color={colors.white} />
+              <Text style={styles.changePhotoLabel}>Change Photo</Text>
+            </Pressable>
           </View>
-        </Pressable>
-        <Text style={styles.name}>{name || "Buyer"}</Text>
-        <Text style={styles.email}>{details.email}</Text>
+          <Text style={styles.name}>{name || session?.user.fullName}</Text>
+          <Text style={styles.email}>{details.email}</Text>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Account</Text>
+          <View style={styles.card}>
           <ProfileRow
             icon={<UserRound size={20} color={colors.primary} />}
-            title="Personal information"
-            subtitle="Name, phone number and location"
-            onPress={() => setDialog("personal")}
+            title="Name"
+            onPress={() => navigation.getParent()?.navigate("BuyerName")}
           />
           <ProfileRow
             icon={<LockKeyhole size={20} color={colors.primary} />}
             title="Change password"
-            subtitle="Update your account password"
-            onPress={() => setDialog("password")}
+            onPress={() => navigation.getParent()?.navigate("BuyerPassword")}
           />
           <ProfileRow
-            icon={<Bell size={20} color={colors.primary} />}
-            title="Notifications"
-            subtitle="Manage your notification preferences"
-            onPress={() => navigation.getParent()?.navigate("Notifications")}
+            icon={<Phone size={20} color={colors.primary} />}
+            title="Phone Number"
+            onPress={() => navigation.getParent()?.navigate("BuyerPhone")}
+            last
           />
+          </View>
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Saved</Text>
+          <View style={styles.card}>
           <ProfileRow
             icon={<ContactRound size={20} color={colors.primary} />}
             title="Saved contacts"
-            subtitle="View your saved shops and sellers"
             onPress={() => navigation.navigate("Saved", { section: "shops" })}
           />
           <ProfileRow
             icon={<Bookmark size={20} color={colors.primary} />}
             title="Saved products"
-            subtitle="View products you saved"
             onPress={() => navigation.navigate("Saved")}
+            last
           />
+          </View>
         </View>
 
         <Pressable style={styles.logoutButton} onPress={logout}>
-          <LogOut size={18} color={colors.danger} />
+          <LogOut size={18} color={SOFT_BLACK} />
           <Text style={styles.logoutLabel}>Log out</Text>
         </Pressable>
       </ScrollView>
 
-      <Modal
-        visible={dialog !== null}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setDialog(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {dialog === "personal"
-                  ? "Personal information"
-                  : "Change password"}
-              </Text>
-              <Pressable onPress={() => setDialog(null)}>
-                <Text style={styles.close}>Close</Text>
-              </Pressable>
-            </View>
-            {dialog === "personal" ? (
-              <>
-                <FieldLabel text="Full name" />
-                <TextInput
-                  style={styles.input}
-                  value={name}
-                  onChangeText={setName}
-                />
-                <FieldLabel text="Email" />
-                <TextInput
-                  style={[styles.input, styles.readOnly]}
-                  value={details.email}
-                  editable={false}
-                />
-                <FieldLabel text="Phone number" />
-                <TextInput
-                  style={[styles.input, styles.readOnly]}
-                  value={details.phone}
-                  editable={false}
-                />
-                <FieldLabel text="Location" />
-                <TextInput
-                  style={styles.input}
-                  value={details.location}
-                  onChangeText={(location) =>
-                    setDetails((current) => ({ ...current, location }))
-                  }
-                />
-                <ActionButton
-                  label="Save changes"
-                  onPress={saveDetails}
-                  loading={isSaving}
-                />
-              </>
-            ) : (
-              <>
-                <PasswordField
-                  label="Current password"
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                />
-                <PasswordField
-                  label="New password"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                />
-                <PasswordField
-                  label="Confirm new password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-                <ActionButton
-                  label="Change password"
-                  onPress={savePassword}
-                  loading={isSaving}
-                />
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -285,169 +173,112 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
 function ProfileRow({
   icon,
   title,
-  subtitle,
   onPress,
+  last,
 }: {
   icon: React.ReactNode;
   title: string;
-  subtitle: string;
   onPress: () => void;
+  last?: boolean;
 }) {
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable style={[styles.row, !last && styles.rowDivider]} onPress={onPress}>
       <View style={styles.rowIcon}>{icon}</View>
-      <View style={styles.rowCopy}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowSubtitle}>{subtitle}</Text>
-      </View>
+      <Text style={[styles.rowTitle, styles.rowCopy]}>{title}</Text>
       <ChevronRight size={19} color={colors.textMuted} />
     </Pressable>
   );
 }
-function FieldLabel({ text }: { text: string }) {
-  return <Text style={styles.fieldLabel}>{text}</Text>;
-}
-function PasswordField({
-  label,
-  value,
-  onChangeText,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-}) {
-  return (
-    <View>
-      <FieldLabel text={label} />
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry
-      />
-    </View>
-  );
-}
-function ActionButton({
-  label,
-  onPress,
-  loading,
-}: {
-  label: string;
-  onPress: () => void;
-  loading: boolean;
-}) {
-  return (
-    <Pressable style={styles.actionButton} onPress={onPress} disabled={loading}>
-      <Text style={styles.actionLabel}>{loading ? "Saving..." : label}</Text>
-    </Pressable>
-  );
-}
+
+// Matching the seller profile page.
+const GREEN = "#1CA30A";
+const SOFT_BLACK = "#3A3A3A";
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20, paddingBottom: 128 },
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: colors.background,
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 20,
-    fontFamily: fonts.headline,
-    color: colors.primary,
-    marginBottom: 18,
-  },
+  loading: { flex: 1, justifyContent: "center", backgroundColor: colors.white },
+  identity: { alignItems: "center", gap: 4, marginTop: 12 },
+  // paddingBottom keeps the pill INSIDE the wrapper: on Android a child
+  // sticking out past its parent gets no touch events.
+  avatarWrap: { alignItems: "center", paddingBottom: 14 },
   avatarButton: {
-    alignSelf: "center",
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
-  avatar: { width: 108, height: 108, borderRadius: 54 },
-  cameraBadge: {
+  avatar: { width: "100%", height: "100%" },
+  changePhoto: {
     position: "absolute",
-    right: 0,
-    bottom: 2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.primary,
+    bottom: 0,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.background,
+    gap: 5,
+    backgroundColor: GREEN,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
   },
+  changePhotoLabel: { fontSize: 12, fontFamily: fonts.bodySemiBold, color: colors.white },
   name: {
     textAlign: "center",
     fontSize: 20,
-    fontFamily: fonts.headline,
-    color: colors.primary,
-    marginTop: 12,
+    fontFamily: fonts.headlineBold,
+    color: colors.text,
   },
   email: {
     textAlign: "center",
     fontSize: 13,
     fontFamily: fonts.bodyRegular,
     color: colors.textMuted,
-    marginTop: 4,
+    marginTop: 2,
   },
-  section: { marginTop: 28 },
+  section: { marginTop: 28, gap: 8 },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: fonts.bodySemiBold,
-    color: colors.textMuted,
-    marginBottom: 8,
-    textTransform: "uppercase",
+    color: colors.text,
   },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.white,
-    borderRadius: radii.card,
-    padding: 14,
-    marginBottom: 10,
+  pressed: { opacity: 0.85 },
+  // The card carries the fill; rows just divide it up.
+  card: {
+    backgroundColor: "#ECF0EF",
+    borderRadius: 10,
+    paddingHorizontal: 14,
   },
-  rowIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radii.card,
-    backgroundColor: colors.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: 14 },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
   },
+  rowIcon: { width: 24, alignItems: "center", justifyContent: "center" },
   rowCopy: { flex: 1, marginLeft: 12 },
   rowTitle: {
     fontSize: 15,
     fontFamily: fonts.bodySemiBold,
     color: colors.text,
   },
-  rowSubtitle: {
-    fontSize: 12,
-    fontFamily: fonts.bodyRegular,
-    color: colors.textMuted,
-    marginTop: 3,
-  },
   logoutButton: {
-    alignSelf: "center",
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
-    minWidth: 150,
-    height: 48,
-    marginBottom: 12,
-    borderWidth: 1.5,
-    borderColor: colors.danger,
-    borderRadius: radii.button,
+    height: 52,
+    paddingHorizontal: 20,
+    marginTop: 12,
   },
   logoutLabel: {
-    color: colors.danger,
-    fontSize: 15,
+    color: SOFT_BLACK,
+    fontSize: 16,
     fontFamily: fonts.bodySemiBold,
   },
   modalBackdrop: {

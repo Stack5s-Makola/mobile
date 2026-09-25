@@ -11,11 +11,12 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Search, Bell, MapPin } from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
-import { colors, fonts, radii } from "@constants/theme";
+import { colors, fonts } from "@constants/theme";
 import { Listing } from "../../types/listing";
 import { listingService } from "@services/listingService";
 
@@ -108,7 +109,7 @@ export function BuyerHomeScreen({ navigation }: any) {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={GREEN} />
       </SafeAreaView>
     );
   }
@@ -142,12 +143,17 @@ export function BuyerHomeScreen({ navigation }: any) {
           </View>
         }
         renderItem={({ item }) => (
-          <ProductCard
-            listing={item}
-            onPress={() =>
-              navigation.navigate("ProductDetails", { listingId: item.id })
-            }
-          />
+          // Half-width cell rather than a flexing card: a lone product on the
+          // last row then stays at column width and sits left, leaving the
+          // gap that says another one would go there.
+          <View style={styles.cell}>
+            <ProductCard
+              listing={item}
+              onPress={() =>
+                navigation.navigate("ProductDetails", { listingId: item.id })
+              }
+            />
+          </View>
         )}
         ListHeaderComponent={
           <View>
@@ -155,7 +161,7 @@ export function BuyerHomeScreen({ navigation }: any) {
               <View>
                 <Text style={styles.locationLabel}>Current Location</Text>
                 <View style={styles.locationValueRow}>
-                  <MapPin size={16} color={colors.primary} />
+                  <MapPin size={16} color={GREEN} />
                   <Text style={styles.locationValue}>{currentLocation}</Text>
                 </View>
               </View>
@@ -166,7 +172,7 @@ export function BuyerHomeScreen({ navigation }: any) {
                   navigation.getParent()?.navigate("Notifications")
                 }
               >
-                <Bell size={20} color={colors.primary} />
+                <Bell size={20} color={colors.text} />
               </Pressable>
             </View>
 
@@ -211,19 +217,52 @@ export function BuyerHomeScreen({ navigation }: any) {
           </View>
         }
       />
+
+      <Pressable
+        style={({ pressed }) => [styles.mapButton, pressed && styles.mapButtonPressed]}
+        onPress={() => navigation.navigate("BuyerMap")}
+        accessibilityRole="button"
+        accessibilityLabel="Open map"
+      >
+        <MaterialCommunityIcons name="map-marker-radius" size={26} color={colors.white} />
+      </Pressable>
     </SafeAreaView>
   );
 }
 
+// Matching the seller screens: white page, black headings, green accents.
+const GREEN = "#1CA30A";
+// Floating map button, matching the seller dashboard.
+const ORANGE = "#F5821F";
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.white },
   loading: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   listContent: { padding: 14, paddingBottom: 132 },
+  cell: { width: "50%" },
+  // Clears the floating tab bar, which sits about 90px up from the bottom.
+  mapButton: {
+    position: "absolute",
+    right: 20,
+    bottom: 108,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: ORANGE,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  mapButtonPressed: { opacity: 0.8 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -231,8 +270,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   locationLabel: {
-    fontSize: 12,
-    fontFamily: fonts.bodyRegular,
+    fontSize: 14,
+    fontFamily: fonts.bodyMedium,
     color: colors.textMuted,
   },
   locationValueRow: {
@@ -242,32 +281,24 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   locationValue: {
-    fontSize: 16,
-    fontFamily: fonts.headline,
-    color: colors.primary,
+    fontSize: 20,
+    fontFamily: fonts.headlineBold,
+    color: colors.text,
   },
-  bellButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.button,
-    backgroundColor: colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  bellButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.neutralSoft,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderRadius: radii.button,
+    backgroundColor: "#F1F4F2",
+    borderWidth: 0,
+    borderRadius: 26,
     paddingHorizontal: 16,
     height: 48,
     marginBottom: 20,
   },
   searchPlaceholder: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: fonts.bodyRegular,
     color: colors.textMuted,
   },
@@ -279,15 +310,11 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 18,
-    fontFamily: fonts.headline,
-    color: colors.primary,
+    fontFamily: fonts.headlineBold,
+    color: colors.text,
     marginBottom: 12,
   },
-  viewAll: {
-    fontSize: 13,
-    fontFamily: fonts.bodyMedium,
-    color: colors.textMuted,
-  },
+  viewAll: { fontSize: 14, fontFamily: fonts.bodySemiBold, color: GREEN },
   chipRow: { marginBottom: 20 },
   empty: {
     textAlign: "center",
@@ -297,10 +324,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   emptyState: { alignItems: "center", paddingTop: 40 },
-  retry: {
-    marginTop: 12,
-    fontSize: 13,
-    fontFamily: fonts.bodySemiBold,
-    color: colors.primary,
-  },
+  retry: { marginTop: 12, fontSize: 14, fontFamily: fonts.bodySemiBold, color: GREEN },
 });

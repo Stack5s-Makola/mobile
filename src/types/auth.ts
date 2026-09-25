@@ -156,6 +156,8 @@ export interface RegisterBuyerResult {
 export interface AuthSessionResult {
   accessToken: string;
   refreshToken: string;
+  // POST /api/login returns this, and emails a fresh code when it's false.
+  emailVerified: boolean;
   userId: string;
   phone: string;
   email: string;
