@@ -20,6 +20,7 @@ import { useAuth } from "@context/AuthContext";
 import { useConnectivityChange } from "@hooks/useIsOffline";
 import { SellerTabProps } from "@navigation/sellerRoutes";
 import * as sellerRepository from "@services/sellerRepository";
+import * as notificationService from "@services/api/notificationService";
 import { DashboardListing, SellerDashboardData } from "@types/seller";
 import { formatPrice, initials } from "@utils/format";
 
@@ -46,6 +47,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const userId = session?.user.id;
 
@@ -86,6 +88,13 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
       } finally {
         setIsRefreshing(false);
       }
+
+      // The badge is a nice-to-have - a failure here must not surface as a
+      // dashboard error.
+      notificationService
+        .getUnreadCount()
+        .then((res) => setUnreadCount(res.success ? res.data.unread : 0))
+        .catch(() => {});
     },
     [userId]
   );
@@ -181,7 +190,16 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
             accessibilityRole="button"
             accessibilityLabel="Notifications"
           >
-            <Bell size={24} color={colors.text} />
+            <View>
+              <Bell size={24} color={colors.text} />
+              {unreadCount > 0 ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </Pressable>
         </View>
 
@@ -398,6 +416,19 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
   emptyBody: { fontSize: 13, fontFamily: fonts.bodyRegular, color: colors.textMuted },
 
+  badge: {
+    position: "absolute",
+    top: -4,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: colors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: { fontSize: 10, fontFamily: fonts.bodyBold, color: colors.white },
   // Clears the floating tab bar, which sits about 90px up from the bottom.
   mapButton: {
     position: "absolute",

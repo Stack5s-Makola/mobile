@@ -6,6 +6,7 @@ import { OtpVerifyScreen } from "@screens/auth/OtpVerifyScreen";
 import { RoleSelectionScreen } from "@screens/auth/RoleSelectionScreen";
 import { BuyerProfileSetupScreen } from "@screens/auth/BuyerProfileSetupScreen";
 import { SellerProfileSetupScreen } from "@screens/auth/SellerProfileSetupScreen";
+import { LocationPickerScreen } from "@screens/auth/LocationPickerScreen";
 import { SignInScreen } from "@screens/auth/SignInScreen";
 import { ForgotPasswordScreen } from "@screens/auth/ForgotPasswordScreen";
 import { CreateNewPasswordScreen } from "@screens/auth/CreateNewPasswordScreen";
@@ -35,6 +36,7 @@ export function AuthNavigator() {
       <Stack.Screen name="OtpVerify" component={OtpVerifyScreen} />
       <Stack.Screen name="BuyerProfileSetup" component={BuyerProfileSetupScreen} />
       <Stack.Screen name="SellerProfileSetup" component={SellerProfileSetupScreen} />
+      <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
     </Stack.Navigator>
   );
 }

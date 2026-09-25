@@ -113,6 +113,60 @@ export interface ProductDetails {
   } | null;
 }
 
+// GET /api/seller/notifications - newest first, max 50.
+// `type` is open-ended ("listing_approved", ...) so it's typed as a string
+// rather than a union we'd have to chase every time the backend adds one.
+export interface SellerNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  // The product id, for deep linking. Null for notifications not about a
+  // specific listing.
+  referenceId: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+// GET /api/buyer/shops/nearby - the proper nearby search: it honours
+// radiusKm and returns a real distance, a place name and a product count.
+export interface NearbyShop {
+  id: string;
+  shopName: string | null;
+  logo: string | null;
+  latitude: number;
+  longitude: number;
+  locationName: string | null;
+  verificationStatus: string | null;
+  distanceKm: number | null;
+  productCount: number;
+}
+
+// GET /api/sellers/nearby. Coordinates arrive as strings ("5.6000000") and
+// are normalised to numbers by the service.
+export interface NearbySeller {
+  id: string;
+  userId: string;
+  shopName: string | null;
+  logoUrl: string | null;
+  verificationStatus: string | null;
+  latitude: number;
+  longitude: number;
+  // Computed on the client - the endpoint doesn't return one.
+  distanceKm: number | null;
+}
+
+// GET /api/buyer/products?latitude&longitude&radiusKm
+export interface NearbyProduct {
+  id: string;
+  name: string;
+  price: number;
+  image: string | null;
+  category: string | null;
+  shopName: string | null;
+  distanceKm: number | null;
+}
+
 export interface SellerDashboardData {
   name: string;
   avatar: string | null;

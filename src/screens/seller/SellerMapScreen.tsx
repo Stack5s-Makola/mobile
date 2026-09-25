@@ -18,6 +18,9 @@ import { useAuth } from "@context/AuthContext";
 import { initials } from "@utils/format";
 import { ensureOfflinePack, OFFLINE_RADIUS_KM } from "@services/db/mapCache";
 import { SyncBanner, SyncStatus } from "@components/SyncBanner";
+import * as nearbyService from "@services/api/nearbyService";
+import { NearbyProduct, NearbyShop } from "@types/seller";
+import { formatDistance } from "@utils/geo";
 import { SellerStackProps } from "@navigation/sellerRoutes";
 
 // Mapbox is initialised once per app load, not per render. The public token
@@ -36,6 +39,9 @@ const GREEN = "#1CA30A";
 const FALLBACK: [number, number] = [-0.187, 5.6037]; // Mapbox wants [lng, lat]
 
 // The sheet's two heights. Tapping the handle moves between them.
+// How far out to look for other shops and their products.
+const SEARCH_RADIUS_KM = 10;
+
 const SHEET_COLLAPSED = 75;
 const SHEET_EXPANDED = SHEET_COLLAPSED * 4;
 
@@ -48,6 +54,8 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
   const { session } = useAuth();
   const user = session?.user;
   const [isExpanded, setIsExpanded] = useState(false);
+  const [shops, setShops] = useState<NearbyShop[]>([]);
+  const [products, setProducts] = useState<NearbyProduct[]>([]);
   const [offlineProgress, setOfflineProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<SyncStatus>("idle");
   const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
@@ -94,6 +102,30 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!centre) return;
+    let cancelled = false;
+    const [longitude, latitude] = centre;
+
+    nearbyService
+      .getNearbyShops(longitude, latitude, SEARCH_RADIUS_KM)
+      .then((res) => {
+        if (!cancelled && res.success) setShops(res.data);
+      })
+      .catch(() => {});
+
+    nearbyService
+      .getNearbyProducts(longitude, latitude, SEARCH_RADIUS_KM)
+      .then((res) => {
+        if (!cancelled && res.success) setProducts(res.data);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [centre]);
+
   const userId = user?.id;
   useEffect(() => {
     if (!centre || !userId) return;
@@ -136,6 +168,22 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
             animationDuration={0}
           />
           <UserLocation visible />
+          {shops
+            .filter((shop) => shop.shopName !== user?.businessName)
+            .map((shop) => (
+              <MarkerView key={shop.id} coordinate={[shop.longitude, shop.latitude]}>
+                <View style={styles.otherMarker}>
+                  {shop.logo ? (
+                    <Image source={{ uri: shop.logo }} style={styles.markerImage} />
+                  ) : (
+                    <Text style={styles.otherMarkerInitials}>
+                      {initials(shop.shopName ?? undefined)}
+                    </Text>
+                  )}
+                </View>
+              </MarkerView>
+            ))}
+
           <MarkerView coordinate={centre}>
             {/* Tapping the seller toggles the expanded sheet. */}
             <Pressable
@@ -272,6 +320,16 @@ const styles = StyleSheet.create({
   },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
   sheetLocation: { flex: 1, fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.text },
+  sheetList: { marginTop: 10 },
+  sheetListContent: { gap: 10, paddingBottom: 8 },
+  sheetEmpty: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  productRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  productImage: { width: 44, height: 44, borderRadius: 8 },
+  productImageFallback: { backgroundColor: colors.neutralSoft },
+  productBody: { flex: 1, gap: 2 },
+  productName: { fontSize: 14, fontFamily: fonts.bodySemiBold, color: colors.text },
+  productMeta: { fontSize: 12, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  productDistance: { fontSize: 13, fontFamily: fonts.bodySemiBold, color: GREEN },
   sheetHandle: {
     alignSelf: "center",
     width: 36,
@@ -297,6 +355,20 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   markerPressed: { opacity: 0.85 },
+  // Other shops: smaller and in the brand green, so the seller's own marker
+  // still reads as "you".
+  otherMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
+  otherMarkerInitials: { fontSize: 12, fontFamily: fonts.headline, color: colors.white },
   markerImage: { width: "100%", height: "100%" },
   markerInitials: { fontSize: 16, fontFamily: fonts.headline, color: colors.white },
 });
