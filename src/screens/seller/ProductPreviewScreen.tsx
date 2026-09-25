@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
-  headerTitle: { fontSize: 22, fontFamily: fonts.headlineBold, color: GREEN },
+  headerTitle: { fontSize: 22, fontFamily: fonts.headlineBold, color: colors.text },
   headerSpacer: { width: 26 },
   content: { padding: 20, paddingBottom: 24, gap: 20 },
 
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
   image: { width: "100%", height: "100%" },
 
   headline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  name: { flex: 1, fontSize: 22, fontFamily: fonts.headline, color: GREEN },
-  price: { fontSize: 26, fontFamily: fonts.headlineBold, color: GREEN },
+  name: { flex: 1, fontSize: 22, fontFamily: fonts.headline, color: colors.text },
+  price: { fontSize: 26, fontFamily: fonts.headlineBold, color: colors.text },
 
   block: { gap: 6 },
   blockLabel: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: GREEN },

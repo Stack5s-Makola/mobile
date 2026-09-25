@@ -17,7 +17,12 @@
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF"
       },
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -37,11 +42,17 @@
           "photosPermission": "Makola uses your photos to let you set a profile picture, add listing photos, and upload verification documents.",
           "cameraPermission": "Makola uses your camera to take listing photos and verification selfies."
         }
-      ]
+      ],
+      "@rnmapbox/maps"
     ],
     "androidStatusBar": {
       "backgroundColor": "#FFFFFF",
       "barStyle": "dark-content"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "06a134ee-e4cd-4b2c-b54d-216008f2ae0f"
+      }
     }
   }
 }

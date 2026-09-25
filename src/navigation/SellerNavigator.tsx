@@ -21,6 +21,7 @@ import { AddProductScreen } from "@screens/seller/AddProductScreen";
 import { ProductPreviewScreen } from "@screens/seller/ProductPreviewScreen";
 import { SellerProductDetailsScreen } from "@screens/seller/SellerProductDetailsScreen";
 import { NotificationsScreen } from "@screens/seller/NotificationsScreen";
+import { SellerMapScreen } from "@screens/seller/SellerMapScreen";
 
 // Seller side of the role-based nav skeleton. Tabs: Home, Create, Shop,
 // Profile.
@@ -94,6 +95,7 @@ export function SellerNavigator() {
       <Stack.Screen name="ProductPreview" component={ProductPreviewScreen} />
       <Stack.Screen name="ProductDetails" component={SellerProductDetailsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Map" component={SellerMapScreen} />
       <Stack.Screen name="BusinessName" component={BusinessNameScreen} />
       <Stack.Screen name="PhoneNumber" component={PhoneNumberScreen} />
       <Stack.Screen name="ShopDetails" component={SellerShopScreen} />

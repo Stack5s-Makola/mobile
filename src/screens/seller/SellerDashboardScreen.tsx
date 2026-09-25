@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Bell, MapPin, MoreVertical, Plus } from "lucide-react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors, fonts, radii } from "@constants/theme";
 import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
 import { SyncBanner, SyncStatus } from "@components/SyncBanner";
@@ -31,6 +31,8 @@ import { formatPrice, initials } from "@utils/format";
 const LIME = "#B5F505";
 // Verified tick on the shop avatar.
 const BLUE = "#1D9BF0";
+// Floating map button.
+const ORANGE = "#F5821F";
 
 const STATUS_LABEL: Record<DashboardListing["status"], string> = {
   pending: "Pending",
@@ -229,6 +231,15 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
           </>
         ) : null}
       </ScrollView>
+
+      <Pressable
+        style={({ pressed }) => [styles.mapButton, pressed && styles.mapButtonPressed]}
+        onPress={() => navigation.navigate("Map")}
+        accessibilityRole="button"
+        accessibilityLabel="Open map"
+      >
+        <MaterialCommunityIcons name="map-marker-radius" size={26} color={colors.white} />
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -357,7 +368,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     backgroundColor: colors.primarySoft,
-    borderRadius: radii.card,
+    // Pinned, not radii.card: that token became 30 in the merge, which turns
+    // a 64px-tall row into a lozenge. 10 is what this card was designed at.
+    borderRadius: 10,
     padding: 12,
   },
   rowImage: { width: 64, height: 64, borderRadius: 8 },
@@ -385,5 +398,23 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
   emptyBody: { fontSize: 13, fontFamily: fonts.bodyRegular, color: colors.textMuted },
 
+  // Clears the floating tab bar, which sits about 90px up from the bottom.
+  mapButton: {
+    position: "absolute",
+    right: 20,
+    bottom: TAB_BAR_CLEARANCE + 8,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: ORANGE,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  mapButtonPressed: { opacity: 0.8 },
   pressed: { opacity: 0.85 },
 });

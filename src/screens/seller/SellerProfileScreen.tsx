@@ -300,7 +300,10 @@ const styles = StyleSheet.create({
   avatarInitials: { fontSize: 32, fontFamily: fonts.headline, color: GREEN },
   name: { fontSize: 20, fontFamily: fonts.headlineBold, color: colors.text, textAlign: "center" },
   // Swapped with the page: cards now carry the tinted background.
-  card: { backgroundColor: colors.background, borderRadius: radii.card, paddingHorizontal: 14 },
+  // Both pinned rather than read from the theme: the merge set
+  // colors.background to #FFFFFF, which made these cards white on a white
+  // page (invisible), and radii.card to 30, which over-rounds them.
+  card: { backgroundColor: "#ECF0EF", borderRadius: 10, paddingHorizontal: 14 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
   rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
   rowLabel: { fontSize: 15, fontFamily: fonts.bodyMedium, color: colors.text },
