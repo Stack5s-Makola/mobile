@@ -41,6 +41,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
 // hence the tolerant read.
 type IssuedTokens = {
   accessToken?: string;
+  token?: string;
   refreshToken?: string;
   userId?: string;
   user?: { id?: string; role?: UserRole };
@@ -49,7 +50,7 @@ type IssuedTokens = {
 function readTokens(data: unknown) {
   const d = (data ?? {}) as IssuedTokens;
   return {
-    accessToken: d.accessToken,
+    accessToken: d.accessToken ?? d.token,
     refreshToken: d.refreshToken,
     userId: d.userId ?? d.user?.id,
     role: d.user?.role,
@@ -138,11 +139,24 @@ export function OtpVerifyScreen({ navigation, route }: any) {
         const res = await apiAuthService.verifyOtp({ email, code });
         if (res.success) {
           showToast(res.message, "success");
+          const verified = readTokens(res.data);
+          if (purpose === "resetPassword") {
+            if (!verified.userId) {
+              showToast(
+                "We could not identify your account. Please try again.",
+                "error",
+              );
+              return;
+            }
+            navigation.navigate("CreateNewPassword", {
+              userId: verified.userId,
+            });
+            return;
+          }
           // login() persists this to secure storage, so the seller stays
           // signed in across app restarts instead of logging in again.
           // Prefer a token minted by verify-otp (it should carry
           // emailVerified: true); otherwise keep the one from registration.
-          const verified = readTokens(res.data);
           const accessToken = verified.accessToken ?? issued?.accessToken ?? "";
           if (!accessToken) {
             // Not fatal - they still get into the app - but any authenticated
@@ -237,7 +251,9 @@ export function OtpVerifyScreen({ navigation, route }: any) {
             {digits.map((digit, i) => (
               <TextInput
                 key={i}
-                ref={(ref) => (inputs.current[i] = ref)}
+                ref={(ref) => {
+                  inputs.current[i] = ref;
+                }}
                 style={styles.codeBox}
                 value={digit}
                 onChangeText={(text) => handleChange(text, i)}

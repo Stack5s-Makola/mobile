@@ -15,9 +15,7 @@ import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
-import * as mockAuthService from "@services/mocks/authService";
-
-const authService = mockAuthService;
+import * as authService from "@services/api/authService";
 
 // NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days) -
 // see README "Known issues".

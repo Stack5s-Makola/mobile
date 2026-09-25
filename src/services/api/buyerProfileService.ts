@@ -16,14 +16,14 @@ export interface BuyerPersonalDetails extends BuyerProfile {
 }
 
 export function getProfile(): Promise<ApiResponse<BuyerProfile>> {
-  return authedApiRequest<BuyerProfile>("/buyer/my-profile");
+  return authedApiRequest<BuyerProfile>("/api/buyer/my-profile");
 }
 
 export function getPersonalDetails(): Promise<
   ApiResponse<BuyerPersonalDetails>
 > {
   return authedApiRequest<BuyerPersonalDetails>(
-    "/buyer/my-profile/personal-details",
+    "/api/buyer/my-profile/personal-details",
   );
 }
 
@@ -39,7 +39,7 @@ export function updateProfile(
     type: "image/jpeg",
   } as unknown as Blob);
   return authedFormDataRequest<BuyerProfile>(
-    "/buyer/my-profile",
+    "/api/buyer/my-profile",
     body,
     "PATCH",
   );
@@ -54,7 +54,7 @@ export function updatePersonalDetails(
   payload: Partial<BuyerPersonalDetails>,
 ): Promise<ApiResponse<BuyerPersonalDetails>> {
   return authedApiRequest<BuyerPersonalDetails>(
-    "/buyer/my-profile/personal-details",
+    "/api/buyer/my-profile/personal-details",
     {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -66,7 +66,7 @@ export function changePassword(
   payload: ChangePasswordPayload,
 ): Promise<ApiResponse<{ success: boolean }>> {
   return authedApiRequest<{ success: boolean }>(
-    "/buyer/my-profile/change-password",
+    "/api/buyer/my-profile/change-password",
     {
       method: "POST",
       body: JSON.stringify(payload),

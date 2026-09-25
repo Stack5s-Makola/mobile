@@ -1,7 +1,10 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { BuyerStackParamList, BuyerTabParamList } from "@navigation/buyerRoutes";
+import {
+  BuyerStackParamList,
+  BuyerTabParamList,
+} from "@navigation/buyerRoutes";
 import { AppTabBar } from "@components/AppTabBar";
 import { Home, Search, Bookmark, User } from "lucide-react-native";
 import { BuyerHomeScreen } from "@screens/buyer/BuyerHomeScreen";
@@ -10,6 +13,7 @@ import { SavedTab } from "@screens/buyer/tabs/SavedTab";
 import { BuyerProfileTab } from "@screens/buyer/tabs/BuyerProfileTab";
 import { ProductDetailsScreen } from "@screens/buyer/ProductDetailsScreen";
 import { CategoriesScreen } from "@screens/buyer/CategoriesScreen";
+import { NotificationsScreen } from "@screens/buyer/NotificationsScreen";
 
 // Buyer side of the role-based nav skeleton, following the same
 // Stack-wrapping-Tabs pattern as SellerNavigator. Tabs: Home, Search,
@@ -47,6 +51,7 @@ export function BuyerNavigator() {
       <Stack.Screen name="BuyerTabs" component={BuyerTabs} />
       <Stack.Screen name="Categories" component={CategoriesScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }

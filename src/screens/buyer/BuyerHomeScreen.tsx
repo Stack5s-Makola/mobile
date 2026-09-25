@@ -25,6 +25,11 @@ export function BuyerHomeScreen({ navigation }: any) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState("Locating...");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [coordinates, setCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,7 +58,13 @@ export function BuyerHomeScreen({ navigation }: any) {
           place?.country ??
           "Location unavailable";
 
-        if (isMounted) setCurrentLocation(readableLocation);
+        if (isMounted) {
+          setCurrentLocation(readableLocation);
+          setCoordinates({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        }
       } catch {
         if (isMounted) setCurrentLocation("Location unavailable");
       }
@@ -66,21 +77,29 @@ export function BuyerHomeScreen({ navigation }: any) {
     };
   }, []);
 
-  const loadListings = useCallback(
-    async (isRefresh = false) => {
-      isRefresh ? setIsRefreshing(true) : setIsLoading(true);
-      try {
-        const res = await listingService.getListings(
-          activeCategory ? { category: activeCategory } : undefined,
-        );
-        if (res.success) setListings(res.data);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+  const loadListings = useCallback(async (isRefresh = false) => {
+    isRefresh ? setIsRefreshing(true) : setIsLoading(true);
+    try {
+      const res = await listingService.getListings();
+      if (res.success) {
+        setListings(res.data);
+        setLoadError(null);
+      } else {
+        setLoadError(res.message);
       }
-    },
-    [activeCategory],
-  );
+    } catch {
+      setLoadError(
+        "Could not load products. Check your connection and try again.",
+      );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  const visibleListings = activeCategory
+    ? listings.filter((listing) => listing.category === activeCategory)
+    : listings;
 
   useEffect(() => {
     loadListings();
@@ -97,7 +116,7 @@ export function BuyerHomeScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <FlatList
-        data={listings}
+        data={visibleListings}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.listContent}
@@ -108,11 +127,19 @@ export function BuyerHomeScreen({ navigation }: any) {
           />
         }
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            {activeCategory
-              ? "No listings in this category yet."
-              : "No listings yet - check back soon."}
-          </Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.empty}>
+              {loadError ??
+                (activeCategory
+                  ? "No listings in this category yet."
+                  : "No listings yet - check back soon.")}
+            </Text>
+            {loadError ? (
+              <Pressable onPress={() => loadListings(true)}>
+                <Text style={styles.retry}>Try again</Text>
+              </Pressable>
+            ) : null}
+          </View>
         }
         renderItem={({ item }) => (
           <ProductCard
@@ -132,7 +159,13 @@ export function BuyerHomeScreen({ navigation }: any) {
                   <Text style={styles.locationValue}>{currentLocation}</Text>
                 </View>
               </View>
-              <Pressable style={styles.bellButton}>
+              <Pressable
+                accessibilityLabel="Open notifications"
+                style={styles.bellButton}
+                onPress={() =>
+                  navigation.getParent()?.navigate("Notifications")
+                }
+              >
                 <Bell size={20} color={colors.primary} />
               </Pressable>
             </View>
@@ -262,5 +295,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
     color: colors.textMuted,
+  },
+  emptyState: { alignItems: "center", paddingTop: 40 },
+  retry: {
+    marginTop: 12,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.primary,
   },
 });
