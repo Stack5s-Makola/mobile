@@ -10,7 +10,7 @@ import * as SQLite from "expo-sqlite";
 const DATABASE_NAME = "makola.db";
 
 // Bump this and add a migration below when the schema changes.
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -65,6 +65,29 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     `);
   }
 
+  if (current < 2) {
+    // Mapbox stores the tiles itself; this table only records WHICH regions
+    // we've asked it to keep, so the app can tell whether a place is already
+    // available offline without querying the native store on every render.
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS offline_map_packs (
+        name       TEXT PRIMARY KEY NOT NULL,
+        user_id    TEXT NOT NULL,
+        latitude   REAL NOT NULL,
+        longitude  REAL NOT NULL,
+        radius_km  REAL NOT NULL,
+        min_zoom   INTEGER NOT NULL,
+        max_zoom   INTEGER NOT NULL,
+        style_url  TEXT NOT NULL,
+        status     TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS offline_map_packs_by_user
+        ON offline_map_packs (user_id);
+    `);
+  }
+
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
 }
 
@@ -91,5 +114,6 @@ export async function clearCachedData(): Promise<void> {
     DELETE FROM seller_profile;
     DELETE FROM listings;
     DELETE FROM cached_images;
+    DELETE FROM offline_map_packs;
   `);
 }

@@ -1,12 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Image, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  Animated,
+  Easing,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, MapPin } from "lucide-react-native";
 import Mapbox, { Camera, MapView, MarkerView, UserLocation } from "@rnmapbox/maps";
 import * as Location from "expo-location";
 import { colors, fonts } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
 import { initials } from "@utils/format";
+import { ensureOfflinePack, OFFLINE_RADIUS_KM } from "@services/db/mapCache";
 import { SellerStackProps } from "@navigation/sellerRoutes";
 
 // Mapbox is initialised once per app load, not per render. The public token
@@ -24,10 +34,31 @@ const GREEN = "#1CA30A";
 // real coordinates aren't known.
 const FALLBACK: [number, number] = [-0.187, 5.6037]; // Mapbox wants [lng, lat]
 
+// The sheet's two heights. Tapping the handle moves between them.
+const SHEET_COLLAPSED = 75;
+const SHEET_EXPANDED = SHEET_COLLAPSED * 4;
+
+function formatCoordinates([longitude, latitude]: [number, number]): string {
+  return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+}
+
 export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const user = session?.user;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [offlineProgress, setOfflineProgress] = useState<number | null>(null);
+  const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
+
+  useEffect(() => {
+    Animated.timing(sheetHeight, {
+      toValue: isExpanded ? SHEET_EXPANDED : SHEET_COLLAPSED,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      // Height can't be driven natively.
+      useNativeDriver: false,
+    }).start();
+  }, [isExpanded, sheetHeight]);
   const [centre, setCentre] = useState<[number, number] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -61,6 +92,14 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
     };
   }, []);
 
+  const userId = user?.id;
+  useEffect(() => {
+    if (!centre || !userId) return;
+    ensureOfflinePack(userId, centre, (percentage) =>
+      setOfflineProgress(percentage >= 100 ? null : percentage)
+    );
+  }, [centre, userId]);
+
   return (
     <View style={styles.container}>
       {centre ? (
@@ -81,13 +120,20 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
           />
           <UserLocation visible />
           <MarkerView coordinate={centre}>
-            <View style={styles.marker}>
+            {/* Tapping the seller toggles the expanded sheet. */}
+            <Pressable
+              style={({ pressed }) => [styles.marker, pressed && styles.markerPressed]}
+              onPress={() => setIsExpanded((expanded) => !expanded)}
+              accessibilityRole="button"
+              accessibilityLabel={isExpanded ? "Hide shop details" : "Show shop details"}
+              accessibilityState={{ expanded: isExpanded }}
+            >
               {user?.photoUri ? (
                 <Image source={{ uri: user.photoUri }} style={styles.markerImage} />
               ) : (
                 <Text style={styles.markerInitials}>{initials(user?.businessName)}</Text>
               )}
-            </View>
+            </Pressable>
           </MarkerView>
         </MapView>
       ) : (
@@ -122,9 +168,35 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
 
       {/* Bottom sheet, Google Maps style: flush to the edges, rounded only at
           the top, with a drag handle. Empty for now; content to come. */}
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.sheetHandle} />
-      </View>
+      <Animated.View
+        style={[styles.sheet, { height: Animated.add(sheetHeight, insets.bottom) }]}
+      >
+        <Pressable
+          onPress={() => setIsExpanded(false)}
+          disabled={!isExpanded}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Collapse details"
+          accessibilityState={{ expanded: isExpanded }}
+        >
+          <View style={styles.sheetHandle} />
+        </Pressable>
+
+        <View style={styles.sheetRow}>
+          <MapPin size={20} color={ORANGE} />
+          <Text style={styles.sheetLocation} numberOfLines={1}>
+            {/* What the seller typed at sign-up; the coordinates are the
+                fallback when they never gave one. */}
+            {user?.location || (centre ? formatCoordinates(centre) : "Location unknown")}
+          </Text>
+        </View>
+
+        {offlineProgress !== null ? (
+          <Text style={styles.sheetProgress}>
+            Saving {OFFLINE_RADIUS_KM}km for offline use… {Math.round(offlineProgress)}%
+          </Text>
+        ) : null}
+      </Animated.View>
     </View>
   );
 }
@@ -166,7 +238,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    minHeight: 150,
+    // Height is animated between the two states; content beyond it is clipped.
+    overflow: "hidden",
     // Corners only at the top - the sheet runs off the bottom of the screen.
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
@@ -178,6 +251,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 8,
+  },
+  sheetRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
+  sheetLocation: { flex: 1, fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.text },
+  sheetProgress: {
+    marginTop: 8,
+    fontSize: 13,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
   },
   sheetHandle: {
     alignSelf: "center",
@@ -203,6 +284,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  markerPressed: { opacity: 0.85 },
   markerImage: { width: "100%", height: "100%" },
   markerInitials: { fontSize: 16, fontFamily: fonts.headline, color: colors.white },
 });
