@@ -8,7 +8,7 @@ import { colors, fonts } from "@constants/theme";
 
 const HEIGHT = 40;
 const SLIDE_MS = 320;
-const DONE_HOLD_MS = 5000;
+const DONE_HOLD_MS = 3000;
 // Sits below the top edge rather than flush against the status bar.
 const TOP_OFFSET = 56;
 // Far enough up to clear its own height plus that offset when hidden.

@@ -1,28 +1,21 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
 import { colors, fonts, radii } from "@constants/theme";
-import type { LucideIcon } from "lucide-react-native";
 
 type Props = {
   label: string;
-  icon: LucideIcon;
+  icon: string; // emoji
   active?: boolean;
   onPress?: () => void;
 };
 
 export function CategoryChip({ label, icon, active, onPress }: Props) {
-  const Icon = icon;
-
   return (
     <Pressable
       style={[styles.chip, active ? styles.chipActive : styles.chipInactive]}
       onPress={onPress}
     >
-      <Icon
-        size={15}
-        color={active ? colors.white : colors.primary}
-        strokeWidth={2}
-      />
+      <Text style={styles.icon}>{icon}</Text>
       <Text
         style={[
           styles.label,
@@ -47,6 +40,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.primary },
   chipInactive: { backgroundColor: colors.neutralSoft },
+  icon: { fontSize: 14 },
   label: { fontSize: 12, fontFamily: fonts.bodyMedium },
   labelActive: { color: colors.white },
   labelInactive: { color: colors.primary },

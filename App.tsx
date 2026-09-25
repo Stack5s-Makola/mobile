@@ -1,7 +1,7 @@
 import React from "react";
 import { View, ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, DefaultTheme, Theme } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts, Sora_600SemiBold, Sora_700Bold } from "@expo-google-fonts/sora";
 import {
@@ -14,6 +14,14 @@ import { colors } from "@constants/theme";
 import { AuthProvider } from "@context/AuthContext";
 import { ToastProvider } from "@components/Toast";
 import { RootNavigator } from "@navigation/RootNavigator";
+
+// React Navigation paints its own root background behind every screen; its
+// default is a light grey that reads as dark under a translucent status bar
+// on some devices. Pin it to the app's white.
+const navigationTheme: Theme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: colors.white },
+};
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -40,7 +48,7 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <ToastProvider>
-          <NavigationContainer>
+          <NavigationContainer theme={navigationTheme}>
             <RootNavigator />
             <StatusBar style="dark" backgroundColor={colors.white} />
           </NavigationContainer>

@@ -259,23 +259,20 @@ function Select({
 
       {isOpen ? (
         <View style={styles.options}>
-          {CATEGORIES.map((option) => {
-            const Icon = option.icon;
-            return (
-              <Pressable
-                key={option.id}
-                style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-                onPress={() => {
-                  onSelect(option.id);
-                  setIsOpen(false);
-                }}
-                accessibilityRole="button"
-              >
-                <Icon size={18} color={GREEN} />
-                <Text style={styles.optionLabel}>{option.label}</Text>
-              </Pressable>
-            );
-          })}
+          {CATEGORIES.map((option) => (
+            <Pressable
+              key={option.id}
+              style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
+              onPress={() => {
+                onSelect(option.id);
+                setIsOpen(false);
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.optionIcon}>{option.icon}</Text>
+              <Text style={styles.optionLabel}>{option.label}</Text>
+            </Pressable>
+          ))}
         </View>
       ) : null}
     </View>
@@ -300,7 +297,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
-  headerTitle: { fontSize: 22, fontFamily: fonts.headlineBold, color: GREEN },
+  headerTitle: { fontSize: 22, fontFamily: fonts.headlineBold, color: colors.text },
   headerSpacer: { width: 26 },
   content: { padding: 20, paddingBottom: 40, gap: 18 },
 
@@ -373,6 +370,7 @@ const styles = StyleSheet.create({
   },
   option: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   optionPressed: { backgroundColor: colors.background },
+  optionIcon: { fontSize: 16 },
   optionLabel: { fontSize: 15, fontFamily: fonts.bodyRegular, color: colors.text },
 
   // PrimaryButton draws a 3px border in the theme's dark green; overriding

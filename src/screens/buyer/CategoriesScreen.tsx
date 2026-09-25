@@ -51,9 +51,7 @@ export function CategoriesScreen({
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
           <View style={styles.categoryHeaderTitle}>
-            {category ? (
-              <category.icon size={20} color={colors.primary} />
-            ) : null}
+            {category ? <Text style={styles.headerIcon}>{category.icon}</Text> : null}
             <Text style={styles.headerTitle}>{category?.label}</Text>
           </View>
         </View>
@@ -109,7 +107,7 @@ export function CategoriesScreen({
             style={styles.categoryCard}
             onPress={() => setSelectedCategory(item.id)}
           >
-            <item.icon size={36} color={colors.primary} strokeWidth={1.8} />
+            <Text style={styles.categoryIcon}>{item.icon}</Text>
             <Text style={styles.categoryLabel}>{item.label}</Text>
           </Pressable>
         )}
@@ -152,6 +150,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryIcon: { fontSize: 36 },
+  headerIcon: { fontSize: 20 },
   categoryLabel: {
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,

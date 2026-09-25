@@ -15,7 +15,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { ArrowLeft, MapPin, MoreVertical } from "lucide-react-native";
 import { TAB_BAR_CLEARANCE } from "@components/AppTabBar";
 import { SyncBanner, SyncStatus } from "@components/SyncBanner";
-import { colors, fonts, radii } from "@constants/theme";
+import { colors, fonts } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
 import { useConnectivityChange } from "@hooks/useIsOffline";
 import { ListingsStackProps } from "@navigation/sellerRoutes";
@@ -289,7 +289,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 12,
-    borderRadius: radii.card,
+    // Pinned, not radii.card: that token became 30 in the merge, which
+    // over-rounds a 76px row. 10 matches the image tile below.
+    borderRadius: 10,
     backgroundColor: colors.white,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
