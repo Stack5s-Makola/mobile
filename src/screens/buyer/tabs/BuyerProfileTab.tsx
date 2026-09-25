@@ -174,12 +174,7 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
             icon={<Bell size={20} color={colors.primary} />}
             title="Notifications"
             subtitle="Manage your notification preferences"
-            onPress={() =>
-              Alert.alert(
-                "Notifications",
-                "Notification preferences will be available here soon.",
-              )
-            }
+            onPress={() => navigation.getParent()?.navigate("Notifications")}
           />
         </View>
         <View style={styles.section}>

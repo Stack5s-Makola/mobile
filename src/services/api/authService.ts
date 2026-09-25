@@ -13,7 +13,7 @@ import {
   ResetPasswordPayload,
 } from "@types/auth";
 import { UserRole } from "@types/user";
-import { apiRequest } from "./client";
+import { apiRequest, formDataRequest } from "./client";
 import {
   RegisterSellerPayload,
   RegisterSellerResult,
@@ -21,6 +21,7 @@ import {
   ResendOtpResult,
   RegisterBuyerPayload,
   RegisterBuyerResult,
+  LoginResult,
 } from "@types/auth";
 
 // // Real backend calls. Same function names/signatures as
@@ -87,7 +88,6 @@ import {
 //   return apiRequest("/api/auth/reset-password", { method: "POST", body: JSON.stringify(payload) });
 // }
 
-
 // POST /api/register/set-seller-profile - creates the account AND emails a
 // 6-digit code, in one call. Sent as multipart/form-data so the shop photo
 // can ride along; the server stores it on Cloudinary and the returned URL
@@ -133,7 +133,7 @@ function toFilePart(uri: string): FormDataFile {
 }
 
 export function registerSeller(
-  payload: RegisterSellerPayload
+  payload: RegisterSellerPayload,
 ): Promise<ApiResponse<RegisterSellerResult>> {
   const form = new FormData();
   form.append("email", payload.email.trim());
@@ -151,24 +151,31 @@ export function registerSeller(
     form.append("image", toFilePart(payload.photoUri) as unknown as Blob);
   }
 
-  return apiRequest("/api/register/set-seller-profile", { method: "POST", body: form });
+  return apiRequest("/api/register/set-seller-profile", {
+    method: "POST",
+    body: form,
+  });
 }
 
 // POST /api/register/buyer - creates a buyer account and emails a code.
 // Takes credentials only; there are no profile fields on this endpoint.
 // Like the seller endpoint it issues a token before the email is verified.
 export function registerBuyer(
-  payload: RegisterBuyerPayload
+  payload: RegisterBuyerPayload,
 ): Promise<ApiResponse<RegisterBuyerResult>> {
-  return apiRequest("/api/register/buyer", {
-    method: "POST",
-    body: JSON.stringify({
-      email: payload.email.trim(),
-      phone: payload.phone.trim(),
-      password: payload.password,
-      role: "BUYER",
-    }),
-  });
+  const body = new FormData();
+  body.append("email", payload.email.trim());
+  body.append("phone", payload.phone.trim());
+  body.append("password", payload.password);
+  body.append("role", "BUYER");
+  if (payload.photoUri) {
+    body.append("picture", {
+      uri: payload.photoUri,
+      name: "profile.jpg",
+      type: "image/jpeg",
+    } as unknown as Blob);
+  }
+  return formDataRequest<RegisterBuyerResult>("/register/buyer", body);
 }
 
 // POST /api/verify-otp - checks the 6-digit code that was emailed.
@@ -180,9 +187,9 @@ export function registerBuyer(
 // real code from an inbox), so the result is left as unknown - the screen
 // only branches on res.success today.
 export function verifyOtp(
-  payload: VerifyEmailOtpPayload
+  payload: VerifyEmailOtpPayload,
 ): Promise<ApiResponse<unknown>> {
-  return apiRequest("/api/verify-otp", {
+  return apiRequest("/verify-otp", {
     method: "POST",
     body: JSON.stringify({ email: payload.email.trim(), code: payload.code }),
   });
@@ -193,9 +200,74 @@ export function verifyOtp(
 //   200 { email, expiresAt }
 //   400 "Please wait 56 seconds before requesting another code"  (throttled)
 //   400 { errors: { email: "Please provide a valid email address" } }
-export function resendOtp(email: string): Promise<ApiResponse<ResendOtpResult>> {
-  return apiRequest("/api/verify-otp/resend", {
+export function resendOtp(
+  email: string,
+): Promise<ApiResponse<ResendOtpResult>> {
+  return apiRequest("/verify-otp/resend", {
     method: "POST",
     body: JSON.stringify({ email: email.trim() }),
+  });
+}
+
+type LoginResponse = {
+  accessToken?: string;
+  token?: string;
+  refreshToken?: string;
+  userId?: string;
+  id?: string;
+  email?: string;
+  phone?: string;
+  role?: UserRole;
+  fullName?: string;
+  location?: string;
+  businessName?: string;
+  photoUri?: string;
+  user?: {
+    id?: string;
+    email?: string;
+    phone?: string;
+    role?: UserRole;
+    name?: string;
+    picture?: string;
+  };
+};
+
+export async function login(
+  payload: LoginPayload,
+): Promise<ApiResponse<AuthSessionResult>> {
+  const res = await apiRequest<LoginResponse>("/login", {
+    method: "POST",
+    body: JSON.stringify({
+      email: payload.email.trim(),
+      password: payload.password,
+    }),
+  });
+  if (!res.success) return { ...res, data: null as never };
+
+  const data = res.data;
+  const user = data.user;
+  return {
+    ...res,
+    data: {
+      accessToken: data.accessToken ?? data.token ?? "",
+      refreshToken: data.refreshToken ?? "",
+      userId: data.userId ?? data.id ?? user?.id ?? "",
+      phone: data.phone ?? user?.phone ?? "",
+      email: data.email ?? user?.email ?? payload.email.trim(),
+      role: data.role ?? user?.role ?? "BUYER",
+      fullName: data.fullName ?? user?.name ?? "",
+      location: data.location ?? "",
+      businessName: data.businessName,
+      photoUri: data.photoUri ?? user?.picture,
+    },
+  };
+}
+
+export function resetPassword(
+  payload: ResetPasswordPayload,
+): Promise<ApiResponse<{ success: boolean }>> {
+  return apiRequest("/reset-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }

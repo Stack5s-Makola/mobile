@@ -14,9 +14,7 @@ import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
-import * as mockAuthService from "@services/mocks/authService";
-
-const authService = mockAuthService;
+import * as authService from "@services/api/authService";
 
 export function CreateNewPasswordScreen({ navigation, route }: any) {
   const { userId } = route.params as { userId: string };

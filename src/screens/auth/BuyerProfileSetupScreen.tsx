@@ -65,6 +65,7 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
         email,
         phone,
         password,
+        photoUri,
       });
       if (res.success) {
         showToast(res.message, "success");
@@ -78,7 +79,7 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
             photoUri,
           },
           issued: {
-            accessToken: res.data.accessToken,
+            accessToken: res.data.accessToken ?? res.data.token ?? "",
             userId: res.data.user?.id ?? "",
             role: res.data.user?.role ?? "BUYER",
           },

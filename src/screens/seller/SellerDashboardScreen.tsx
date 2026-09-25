@@ -61,7 +61,9 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
       // Paint the stored copy first so the shop is on screen immediately;
       // the network call then quietly replaces it.
       if (!isRefresh) {
-        const cached = await sellerRepository.getCachedDashboard(userId).catch(() => null);
+        const cached = await sellerRepository
+          .getCachedDashboard(userId)
+          .catch(() => null);
         if (cached) setDashboard(cached);
       }
 
@@ -85,7 +87,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
         setIsRefreshing(false);
       }
     },
-    [userId]
+    [userId],
   );
 
   // Announce the drop straight away, and on reconnect say so and refetch -
@@ -103,7 +105,7 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+    }, [load]),
   );
 
   function goToAddListing() {
@@ -197,7 +199,10 @@ export function SellerDashboardScreen({ navigation }: SellerTabProps<"Home">) {
               </View>
 
               <Pressable
-                style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+                style={({ pressed }) => [
+                  styles.addButton,
+                  pressed && styles.pressed,
+                ]}
                 onPress={goToAddListing}
                 accessibilityRole="button"
               >
@@ -256,7 +261,11 @@ function ListingRow({
       accessibilityRole="button"
     >
       {listing.image ? (
-        <Image source={{ uri: listing.image }} style={styles.rowImage} resizeMode="cover" />
+        <Image
+          source={{ uri: listing.image }}
+          style={styles.rowImage}
+          resizeMode="cover"
+        />
       ) : (
         <View style={[styles.rowImage, styles.rowImageFallback]} />
       )}
@@ -270,7 +279,9 @@ function ListingRow({
           <View style={styles.rowLocation}>
             <MapPin size={13} color={colors.textMuted} />
             <Text style={styles.rowLocationText} numberOfLines={1}>
-              {listing.location}
+              {typeof listing.location === "string"
+                ? listing.location
+                : "Location unavailable"}
             </Text>
           </View>
         ) : null}
@@ -303,8 +314,17 @@ const styles = StyleSheet.create({
   },
   content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE, gap: 16 },
 
-  greeting: { fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.textMuted },
-  identity: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: -4 },
+  greeting: {
+    fontSize: 16,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.textMuted,
+  },
+  identity: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: -4,
+  },
   avatarBox: { width: 52, height: 52 },
   avatar: { width: 52, height: 52, borderRadius: 26 },
   verifiedBadge: { position: "absolute", right: -2, bottom: -2 },
@@ -313,8 +333,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarInitials: { fontSize: 18, fontFamily: fonts.headline, color: colors.primary },
-  shopName: { flex: 1, fontSize: 22, fontFamily: fonts.headline, color: colors.primary },
+  avatarInitials: {
+    fontSize: 18,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+  },
+  shopName: {
+    flex: 1,
+    fontSize: 22,
+    fontFamily: fonts.headline,
+    color: colors.primary,
+  },
 
   error: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.danger },
 
@@ -348,9 +377,17 @@ const styles = StyleSheet.create({
     borderRadius: radii.button,
     paddingVertical: 12,
   },
-  addButtonLabel: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
+  addButtonLabel: {
+    fontSize: 15,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.text,
+  },
 
-  sectionTitle: { fontSize: 16, fontFamily: fonts.headline, color: colors.text },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: fonts.headline,
+    color: colors.text,
+  },
 
   list: { gap: 12 },
   row: {
@@ -366,7 +403,11 @@ const styles = StyleSheet.create({
   rowName: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
   rowPrice: { fontSize: 15, fontFamily: fonts.headline, color: colors.primary },
   rowLocation: { flexDirection: "row", alignItems: "center", gap: 4 },
-  rowLocationText: { fontSize: 12, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  rowLocationText: {
+    fontSize: 12,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
   rowEnd: { alignItems: "flex-end", justifyContent: "space-between" },
   status: {
     backgroundColor: colors.primary,
@@ -374,7 +415,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  statusText: { fontSize: 11, fontFamily: fonts.bodySemiBold, color: colors.white },
+  statusText: {
+    fontSize: 11,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.white,
+  },
 
   empty: {
     backgroundColor: colors.white,
@@ -382,8 +427,16 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 4,
   },
-  emptyTitle: { fontSize: 15, fontFamily: fonts.bodySemiBold, color: colors.text },
-  emptyBody: { fontSize: 13, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  emptyTitle: {
+    fontSize: 15,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.text,
+  },
+  emptyBody: {
+    fontSize: 13,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
 
   pressed: { opacity: 0.85 },
 });

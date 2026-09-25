@@ -1,6 +1,6 @@
 import { ApiResponse } from "../../types/api";
 import { Listing } from "../../types/listing";
-import { apiRequest } from "./client";
+import { authedApiRequest } from "./client";
 
 // The wire shape is NOT the app's Listing, so everything is normalized here
 // rather than cast and hoped for:
@@ -21,10 +21,28 @@ type ApiProduct = {
   price: string | number | null;
   description?: string | null;
   images?: string[] | null;
-  category?: { id?: string | null } | string | null;
+  image?: string | null;
+  location?: string | { latitude?: number; longitude?: number } | null;
+  category?:
+    | {
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+        label?: string | null;
+      }
+    | string
+    | null;
   seller?: {
+    id?: string | null;
     shopName?: string | null;
     phone?: string | null;
+    verificationStatus?: string | null;
+  } | null;
+  shop?: {
+    id?: string | null;
+    shopName?: string | null;
+    phone?: string | null;
+    logo?: string | null;
     verificationStatus?: string | null;
   } | null;
 };
@@ -35,8 +53,38 @@ function toNumber(value: string | number | null | undefined): number {
 }
 
 function categoryId(category: ApiProduct["category"]): string {
-  if (typeof category === "string") return category;
-  return category?.id ?? "";
+  const raw =
+    typeof category === "string"
+      ? category
+      : (category?.slug ??
+        category?.name ??
+        category?.label ??
+        category?.id ??
+        "");
+  const normalized = raw.trim().toLowerCase().replace(/\s+/g, "-");
+
+  const aliases: Record<string, string> = {
+    fabric: "fabrics",
+    fabrics: "fabrics",
+    handicrafts: "handicraft",
+    beauty: "beauty",
+    "farm-produce": "farm-produce",
+    "farm produce": "farm-produce",
+    electronics: "electronics",
+  };
+
+  return aliases[normalized] ?? normalized;
+}
+
+function locationLabel(location: ApiProduct["location"]): string {
+  if (typeof location === "string") return location;
+  if (location && typeof location === "object") {
+    const { latitude, longitude } = location;
+    if (latitude !== undefined && longitude !== undefined) {
+      return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    }
+  }
+  return "";
 }
 
 function toListing(product: ApiProduct): Listing {
@@ -44,12 +92,14 @@ function toListing(product: ApiProduct): Listing {
     id: product.id,
     name: product.name,
     price: toNumber(product.price),
-    mainImage: product.images?.[0] ?? "",
-    sellerName: product.seller?.shopName ?? "",
-    sellerPhone: product.seller?.phone ?? "",
-    sellerVerified: product.seller?.verificationStatus === "verified",
+    mainImage: product.images?.[0] ?? product.image ?? "",
+    sellerName: product.seller?.shopName ?? product.shop?.shopName ?? "",
+    sellerPhone: product.seller?.phone ?? product.shop?.phone ?? "",
+    sellerVerified:
+      product.seller?.verificationStatus === "verified" ||
+      product.shop?.verificationStatus === "verified",
     category: categoryId(product.category),
-    location: "",
+    location: locationLabel(product.location),
     description: product.description ?? undefined,
   };
 }
@@ -81,8 +131,8 @@ export async function getListings(
     params.set("radiusKm", String(filters.radiusKm));
   const query = params.toString();
   return mapList(
-    await apiRequest<ApiProduct[]>(
-      `/buyer/products${query ? `?${query}` : ""}`,
+    await authedApiRequest<ApiProduct[]>(
+      `/api/buyer/products${query ? `?${query}` : ""}`,
     ),
   );
 }
@@ -90,8 +140,8 @@ export async function getListings(
 export async function searchListings(
   query: string,
 ): Promise<ApiResponse<Listing[]>> {
-  const res = await apiRequest<ApiProduct[]>(
-    `/buyer/products/search?q=${encodeURIComponent(query.trim())}`,
+  const res = await authedApiRequest<ApiProduct[]>(
+    `/api/buyer/products/search?q=${encodeURIComponent(query.trim())}`,
   );
   return mapList(res);
 }
@@ -99,8 +149,8 @@ export async function searchListings(
 export async function getListingById(
   id: string,
 ): Promise<ApiResponse<Listing | null>> {
-  const res = await apiRequest<ApiProduct | null>(
-    `/buyer/products/${encodeURIComponent(id)}`,
+  const res = await authedApiRequest<ApiProduct | null>(
+    `/api/buyer/products/${encodeURIComponent(id)}`,
   );
   return { ...res, data: res.success && res.data ? toListing(res.data) : null };
 }

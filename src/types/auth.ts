@@ -135,16 +135,18 @@ export interface RegisterBuyerPayload {
   phone: string;
   password: string;
   role?: UserRole;
+  photoUri?: string;
 }
 
 // Shape follows the seller endpoint's; `saved` and `expiresIn` are treated
 // as optional until confirmed live (it is localhost-only so far).
 export interface RegisterBuyerResult {
-  accessToken: string;
+  accessToken?: string;
+  token?: string;
   expiresIn?: string;
   saved?: boolean;
   user?: {
-    id: string;
+    id?: string;
     email: string;
     role: UserRole;
     emailVerified: boolean;
@@ -177,4 +179,14 @@ export interface ForgotPasswordPayload {
 export interface ResetPasswordPayload {
   userId: string;
   newPassword: string;
+}
+
+// POST /api/login. Returns only a token and role - no profile fields, so
+// the full user object still needs a follow-up authenticated call (e.g.
+// GET /api/buyer/my-profile/personal-details) once this token is stored
+// and authedApiRequest can attach it.
+export interface LoginResult {
+  accessToken: string;
+  refreshToken?: string;
+  role: UserRole;
 }

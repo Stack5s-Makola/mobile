@@ -17,6 +17,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 // │   └── Profile
 // ├── Categories (full screen, opened from Home's "View All")
 // └── ProductDetails (full screen, opened from any product card)
+// └── Notifications (full screen, opened from Home or Profile)
 
 export type BuyerTabParamList = {
   Home: undefined;
@@ -29,6 +30,7 @@ export type BuyerStackParamList = {
   BuyerTabs: NavigatorScreenParams<BuyerTabParamList> | undefined;
   Categories: { categoryId?: string } | undefined;
   ProductDetails: { listingId: string };
+  Notifications: undefined;
 };
 
 export type BuyerStackProps<T extends keyof BuyerStackParamList> =
