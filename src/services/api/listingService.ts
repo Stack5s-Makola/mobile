@@ -23,7 +23,15 @@ type ApiProduct = {
   images?: string[] | null;
   image?: string | null;
   location?: string | { latitude?: number; longitude?: number } | null;
-  category?: { id?: string | null } | string | null;
+  category?:
+    | {
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+        label?: string | null;
+      }
+    | string
+    | null;
   seller?: {
     id?: string | null;
     shopName?: string | null;
@@ -45,8 +53,27 @@ function toNumber(value: string | number | null | undefined): number {
 }
 
 function categoryId(category: ApiProduct["category"]): string {
-  if (typeof category === "string") return category;
-  return category?.id ?? "";
+  const raw =
+    typeof category === "string"
+      ? category
+      : (category?.slug ??
+        category?.name ??
+        category?.label ??
+        category?.id ??
+        "");
+  const normalized = raw.trim().toLowerCase().replace(/\s+/g, "-");
+
+  const aliases: Record<string, string> = {
+    fabric: "fabrics",
+    fabrics: "fabrics",
+    handicrafts: "handicraft",
+    beauty: "beauty",
+    "farm-produce": "farm-produce",
+    "farm produce": "farm-produce",
+    electronics: "electronics",
+  };
+
+  return aliases[normalized] ?? normalized;
 }
 
 function locationLabel(location: ApiProduct["location"]): string {
