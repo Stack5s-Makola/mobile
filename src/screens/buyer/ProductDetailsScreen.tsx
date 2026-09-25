@@ -150,7 +150,11 @@ export function ProductDetailsScreen({
 
           <View style={styles.locationRow}>
             <MapPin size={16} color={colors.textMuted} />
-            <Text style={styles.locationText}>{listing.location}</Text>
+            <Text style={styles.locationText}>
+              {typeof listing.location === "string"
+                ? listing.location
+                : "Location unavailable"}
+            </Text>
           </View>
 
           <View style={styles.sellerCard}>

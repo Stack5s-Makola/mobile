@@ -135,16 +135,18 @@ export interface RegisterBuyerPayload {
   phone: string;
   password: string;
   role?: UserRole;
+  photoUri?: string;
 }
 
 // Shape follows the seller endpoint's; `saved` and `expiresIn` are treated
 // as optional until confirmed live (it is localhost-only so far).
 export interface RegisterBuyerResult {
-  accessToken: string;
+  accessToken?: string;
+  token?: string;
   expiresIn?: string;
   saved?: boolean;
   user?: {
-    id: string;
+    id?: string;
     email: string;
     role: UserRole;
     emailVerified: boolean;

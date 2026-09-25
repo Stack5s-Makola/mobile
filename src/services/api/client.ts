@@ -15,17 +15,18 @@ const UPLOAD_TIMEOUT_MS = 60_000;
 
 export async function apiRequest<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
   // A FormData body must set its own Content-Type, because the header has to
   // carry the multipart boundary that fetch generates. Forcing
   // application/json here would make the server reject the upload.
-  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const controller = new AbortController();
   const timer = setTimeout(
     () => controller.abort(),
-    isFormData ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS
+    isFormData ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
   );
 
   try {
@@ -37,10 +38,36 @@ export async function apiRequest<T>(
         ...(options.headers as Record<string, string> | undefined),
       },
     });
-    return await res.json();
+    const body = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        message: body?.message ?? "Request failed",
+        data: body?.data ?? (null as T),
+        errors: body?.errors,
+      };
+    }
+    return body;
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error && error.name === "AbortError"
+          ? "Request timed out. Check your connection and try again."
+          : "Check your connection and try again.",
+      data: null as T,
+    };
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function formDataRequest<T>(
+  path: string,
+  body: FormData,
+  method: "POST" | "PATCH" = "POST",
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(path, { method, body });
 }
 
 // Same as apiRequest, plus the signed-in user's bearer token - for
@@ -67,10 +94,9 @@ export async function authedFormDataRequest<T>(
   method: "POST" | "PATCH" = "PATCH",
 ): Promise<ApiResponse<T>> {
   const session = await readStoredSession();
-  const res = await fetch(`${BASE_URL}${path}`, {
+  return apiRequest<T>(path, {
     method,
     headers: session ? { Authorization: `Bearer ${session.accessToken}` } : {},
     body,
   });
-  return res.json();
 }

@@ -9,28 +9,25 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Phone } from "lucide-react-native";
+import { ArrowLeft, Mail } from "lucide-react-native";
 import { AppTextInput } from "@components/AppTextInput";
 import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
-import * as mockAuthService from "@services/mocks/authService";
-
-const authService = mockAuthService;
+import * as authService from "@services/api/authService";
 
 export function ForgotPasswordScreen({ navigation }: any) {
   const { showToast } = useToast();
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSendOtp() {
     setIsLoading(true);
     try {
-      const res = await authService.forgotPassword({ phone });
+      const res = await authService.resendOtp(email);
       if (res.success) {
         navigation.navigate("OtpVerify", {
-          userId: res.data.userId,
-          phone,
+          email,
           purpose: "resetPassword",
         });
       } else {
@@ -57,17 +54,19 @@ export function ForgotPasswordScreen({ navigation }: any) {
           </Pressable>
           <Text style={styles.title}>Forgot Password?</Text>
           <Text style={styles.subtitle}>
-            Enter your phone number and we&apos;ll help you reset your password.
+            Enter your email address and we&apos;ll help you reset your
+            password.
           </Text>
 
           <View style={styles.form}>
             <AppTextInput
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-              icon={<Phone size={20} color={colors.textMuted} />}
+              label="Email address"
+              placeholder="Enter your email address"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              icon={<Mail size={20} color={colors.textMuted} />}
             />
           </View>
 
@@ -75,7 +74,7 @@ export function ForgotPasswordScreen({ navigation }: any) {
             <PrimaryButton
               label="Send OTP"
               onPress={handleSendOtp}
-              disabled={phone.length === 0}
+              disabled={email.length === 0}
               loading={isLoading}
             />
             <Text style={styles.footerText}>

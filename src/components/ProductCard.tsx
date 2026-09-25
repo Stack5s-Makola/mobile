@@ -30,7 +30,9 @@ export function ProductCard({ listing, onPress }: Props) {
         <View style={styles.locationRow}>
           <MapPin size={14} color={colors.textMuted} />
           <Text style={styles.location} numberOfLines={1}>
-            {listing.location}
+            {typeof listing.location === "string"
+              ? listing.location
+              : "Location unavailable"}
           </Text>
         </View>
       </View>
