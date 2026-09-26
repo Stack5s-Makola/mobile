@@ -15,12 +15,6 @@ import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
 import { UserRole } from "@types/user";
 
-// NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days
-// from when it was pulled). Replace with a real exported asset in
-// src/assets once available - see README "Known issues" for context.
-const WORDMARK_URL =
-  "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a8-253f0baf48d0.png";
-
 // No backend call here anymore. Per Daniel: nothing is created until the
 // final combined submission on the role-specific profile-setup screen
 // (e.g. POST /api/register/set-seller-profile), which creates the account
@@ -77,7 +71,7 @@ export function RegisterScreen({ navigation, route }: any) {
       >
         <View style={styles.header}>
           <Image
-            source={{ uri: WORDMARK_URL }}
+            source={require("../../assets/makola_tpbg.png")}
             style={styles.wordmark}
             resizeMode="contain"
           />
@@ -126,7 +120,7 @@ export function RegisterScreen({ navigation, route }: any) {
         </View>
 
         <PrimaryButton
-          label="Continue"
+          label="Create Account"
           onPress={handleContinue}
           disabled={!canSubmit}
         />
@@ -154,12 +148,16 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   header: { alignItems: "center", marginBottom: 24 },
-  wordmark: { width: 70, height: 84, marginBottom: 8 },
-  title: { fontSize: 28, fontFamily: fonts.headline, color: colors.primary },
+  wordmark: { width: 110, height: 40, marginBottom: 60 },
+  title: {
+    fontSize: 28,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+  },
   subtitle: {
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
-    color: colors.text,
+    color: colors.textMuted,
     marginTop: 4,
     textAlign: "center",
   },

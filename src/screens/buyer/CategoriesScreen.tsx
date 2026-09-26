@@ -51,7 +51,9 @@ export function CategoriesScreen({
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
           <View style={styles.categoryHeaderTitle}>
-            {category ? <Text style={styles.headerIcon}>{category.icon}</Text> : null}
+            {category ? (
+              <Text style={styles.headerIcon}>{category.icon}</Text>
+            ) : null}
             <Text style={styles.headerTitle}>{category?.label}</Text>
           </View>
         </View>
@@ -129,7 +131,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
   },
   listContent: { padding: 14, paddingBottom: 132 },
   loading: { marginTop: 40 },
