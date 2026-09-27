@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
   },
   content: { flexGrow: 1, padding: 20 },
   emptyState: {
