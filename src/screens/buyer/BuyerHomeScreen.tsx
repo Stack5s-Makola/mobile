@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   locationValue: {
     fontSize: 16,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
   },
   bellButton: {
     width: 40,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     marginBottom: 12,
   },
   viewAll: {

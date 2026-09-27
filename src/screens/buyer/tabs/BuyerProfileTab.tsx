@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     marginBottom: 18,
   },
   avatarButton: {
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 20,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     marginTop: 12,
   },
   email: {
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 19,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
   },
   close: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.danger },
   fieldLabel: {
