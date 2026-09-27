@@ -12,7 +12,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://makola-backend-r9wy.onrender.com",
         "EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN": "pk.eyJ1IjoicGhlbC1peCIsImEiOiJjbXVkYnFleTQyOXZ2MnlzbHFtbzh3ZjBiIn0.ehvLBIdTPjCEfBKZyRVHyA"
-      }
+      },
+      "channel": "development"
     },
     "development-simulator": {
       "developmentClient": true,
@@ -23,7 +24,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://makola-backend-r9wy.onrender.com",
         "EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN": "pk.eyJ1IjoicGhlbC1peCIsImEiOiJjbXVkYnFleTQyOXZ2MnlzbHFtbzh3ZjBiIn0.ehvLBIdTPjCEfBKZyRVHyA"
-      }
+      },
+      "channel": "development-simulator"
     },
     "preview": {
       "distribution": "internal",
@@ -33,14 +35,16 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://makola-backend-r9wy.onrender.com",
         "EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN": "pk.eyJ1IjoicGhlbC1peCIsImEiOiJjbXVkYnFleTQyOXZ2MnlzbHFtbzh3ZjBiIn0.ehvLBIdTPjCEfBKZyRVHyA"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://makola-backend-r9wy.onrender.com",
         "EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN": "pk.eyJ1IjoicGhlbC1peCIsImEiOiJjbXVkYnFleTQyOXZ2MnlzbHFtbzh3ZjBiIn0.ehvLBIdTPjCEfBKZyRVHyA"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
