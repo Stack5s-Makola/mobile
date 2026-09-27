@@ -189,7 +189,7 @@ export function registerBuyer(
 export function verifyOtp(
   payload: VerifyEmailOtpPayload,
 ): Promise<ApiResponse<unknown>> {
-  return apiRequest("/verify-otp", {
+  return apiRequest("/api/verify-otp", {
     method: "POST",
     body: JSON.stringify({ email: payload.email.trim(), code: payload.code }),
   });
@@ -203,7 +203,7 @@ export function verifyOtp(
 export function resendOtp(
   email: string,
 ): Promise<ApiResponse<ResendOtpResult>> {
-  return apiRequest("/verify-otp/resend", {
+  return apiRequest("/api/verify-otp/resend", {
     method: "POST",
     body: JSON.stringify({ email: email.trim() }),
   });
