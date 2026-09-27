@@ -169,7 +169,7 @@ export function registerBuyer(
   body.append("password", payload.password);
   body.append("role", "BUYER");
   if (payload.photoUri) {
-    body.append("picture", {
+    body.append("image", {
       uri: payload.photoUri,
       name: "profile.jpg",
       type: "image/jpeg",
