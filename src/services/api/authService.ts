@@ -175,7 +175,7 @@ export function registerBuyer(
       type: "image/jpeg",
     } as unknown as Blob);
   }
-  return formDataRequest<RegisterBuyerResult>("/register/buyer", body);
+  return formDataRequest<RegisterBuyerResult>("/api/register/buyer", body);
 }
 
 // POST /api/verify-otp - checks the 6-digit code that was emailed.
