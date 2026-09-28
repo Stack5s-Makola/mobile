@@ -51,13 +51,9 @@ type ApiNearbyShop = {
 };
 
 /**
- * Shops around a point. Prefers GET /api/buyer/shops/nearby, which filters by
- * radius and returns a real distance, a place name and a product count.
- *
- * That endpoint is not deployed yet (404), so this falls back to
- * /api/sellers/nearby - which ignores its parameters, so the radius and the
- * distance are applied on the client. Drop the fallback once the proper one
- * ships.
+ * Shops around a point, from GET /api/buyer/shops/nearby. Verified live: it
+ * honours radiusKm and returns distanceKm, a place name and a product count,
+ * so nothing is computed or filtered here.
  */
 export async function getNearbyShops(
   longitude: number,
@@ -88,26 +84,15 @@ export async function getNearbyShops(
           productCount: shop.productCount ?? 0,
         };
       })
-      .filter((shop): shop is NearbyShop => shop !== null);
+      .filter((shop): shop is NearbyShop => shop !== null)
+      // Sellers only. Every row the endpoint returns today is a shop, but a
+      // buyer account would arrive without a shopName - skip those rather
+      // than plotting a nameless pin.
+      .filter((shop) => Boolean(shop.shopName));
     return { ...res, data: shops };
   }
 
-  const fallback = await getNearbySellers(longitude, latitude, radiusKm);
-  return {
-    ...fallback,
-    data: fallback.data.map((seller) => ({
-      id: seller.id,
-      shopName: seller.shopName,
-      logo: seller.logoUrl,
-      latitude: seller.latitude,
-      longitude: seller.longitude,
-      // Neither is available from the older endpoint.
-      locationName: null,
-      verificationStatus: seller.verificationStatus,
-      distanceKm: seller.distanceKm,
-      productCount: 0,
-    })),
-  };
+  return { ...res, data: [] } as ApiResponse<NearbyShop[]>;
 }
 
 export async function getNearbySellers(

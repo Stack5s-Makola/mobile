@@ -19,6 +19,7 @@ import { ProfileDraft, IssuedFromRegister } from "@types/auth";
 import { UserRole } from "@types/user";
 import * as mockAuthService from "@services/mocks/authService";
 import * as apiAuthService from "@services/api/authService";
+import { decodeJwtClaims } from "@utils/jwt";
 
 // Two paths through this screen:
 //   - seller registration, which is fully live: the account exists on the
@@ -157,7 +158,10 @@ export function OtpVerifyScreen({ navigation, route }: any) {
           // signed in across app restarts instead of logging in again.
           // Prefer a token minted by verify-otp (it should carry
           // emailVerified: true); otherwise keep the one from registration.
-          const accessToken = verified.accessToken ?? issued?.accessToken ?? "";
+          const accessToken = verified.accessToken || issued?.accessToken || "";
+          // The id may be missing from every payload - /api/login omits it
+          // entirely - but the token always carries it as `sub`.
+          const claims = decodeJwtClaims(accessToken);
           if (!accessToken) {
             // Not fatal - they still get into the app - but any authenticated
             // request will fail, so make it visible rather than silent.
@@ -171,7 +175,7 @@ export function OtpVerifyScreen({ navigation, route }: any) {
             {
               // The backend stores the profile but returns none of it, so the
               // session is built from what was typed at sign-up.
-              id: verified.userId ?? issued?.userId ?? email,
+              id: verified.userId || issued?.userId || claims.sub || email,
               email,
               phone: phone ?? "",
               // Whatever the backend says, falling back to the role the

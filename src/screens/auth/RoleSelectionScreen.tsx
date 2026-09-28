@@ -135,4 +135,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16 },
+  continueButton: { borderWidth: 0 },
 });

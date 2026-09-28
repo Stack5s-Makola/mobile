@@ -22,7 +22,11 @@ type ApiProduct = {
   description?: string | null;
   images?: string[] | null;
   image?: string | null;
+  imageUrl?: string | null;
   location?: string | { latitude?: number; longitude?: number } | null;
+  // The readable place name; `location` is coordinates.
+  locationName?: string | null;
+  distanceKm?: number | null;
   category?:
     | {
         id?: string | null;
@@ -76,7 +80,13 @@ function categoryId(category: ApiProduct["category"]): string {
   return aliases[normalized] ?? normalized;
 }
 
-function locationLabel(location: ApiProduct["location"]): string {
+function locationLabel(
+  location: ApiProduct["location"],
+  locationName?: string | null,
+): string {
+  // Prefer the place name - coordinates are a last resort, not something to
+  // show a buyer.
+  if (locationName) return locationName;
   if (typeof location === "string") return location;
   if (location && typeof location === "object") {
     const { latitude, longitude } = location;
@@ -92,14 +102,15 @@ function toListing(product: ApiProduct): Listing {
     id: product.id,
     name: product.name,
     price: toNumber(product.price),
-    mainImage: product.images?.[0] ?? product.image ?? "",
+    mainImage: product.image ?? product.imageUrl ?? product.images?.[0] ?? "",
     sellerName: product.seller?.shopName ?? product.shop?.shopName ?? "",
     sellerPhone: product.seller?.phone ?? product.shop?.phone ?? "",
     sellerVerified:
       product.seller?.verificationStatus === "verified" ||
       product.shop?.verificationStatus === "verified",
     category: categoryId(product.category),
-    location: locationLabel(product.location),
+    location: locationLabel(product.location, product.locationName),
+    distanceKm: product.distanceKm ?? null,
     description: product.description ?? undefined,
   };
 }

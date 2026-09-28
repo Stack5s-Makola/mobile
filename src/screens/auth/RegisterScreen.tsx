@@ -123,6 +123,7 @@ export function RegisterScreen({ navigation, route }: any) {
           label="Create Account"
           onPress={handleContinue}
           disabled={!canSubmit}
+          style={styles.continueButton}
         />
 
         <Text style={styles.footer}>
@@ -170,4 +171,5 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   link: { color: colors.primary, fontFamily: fonts.bodySemiBold },
+  continueButton: { borderWidth: 0 },
 });
