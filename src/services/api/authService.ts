@@ -169,13 +169,13 @@ export function registerBuyer(
   body.append("password", payload.password);
   body.append("role", "BUYER");
   if (payload.photoUri) {
-    body.append("picture", {
+    body.append("image", {
       uri: payload.photoUri,
       name: "profile.jpg",
       type: "image/jpeg",
     } as unknown as Blob);
   }
-  return formDataRequest<RegisterBuyerResult>("/register/buyer", body);
+  return formDataRequest<RegisterBuyerResult>("/api/register/buyer", body);
 }
 
 // POST /api/verify-otp - checks the 6-digit code that was emailed.
@@ -189,7 +189,7 @@ export function registerBuyer(
 export function verifyOtp(
   payload: VerifyEmailOtpPayload,
 ): Promise<ApiResponse<unknown>> {
-  return apiRequest("/verify-otp", {
+  return apiRequest("/api/verify-otp", {
     method: "POST",
     body: JSON.stringify({ email: payload.email.trim(), code: payload.code }),
   });
@@ -203,7 +203,7 @@ export function verifyOtp(
 export function resendOtp(
   email: string,
 ): Promise<ApiResponse<ResendOtpResult>> {
-  return apiRequest("/verify-otp/resend", {
+  return apiRequest("/api/verify-otp/resend", {
     method: "POST",
     body: JSON.stringify({ email: email.trim() }),
   });
