@@ -1,6 +1,7 @@
 import { NavigatorScreenParams, CompositeScreenProps } from "@react-navigation/native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { NearbyProduct, NearbyShop } from "@types/seller";
 
 // Route names/params for the seller side, kept apart from
 // SellerNavigator.tsx so screens can import them without a cycle.
@@ -19,6 +20,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 // ├── BusinessName (full screen, from the Profile's Business Information list)
 // ├── PhoneNumber  (full screen, same list)
 // ├── ShopDetails  (full screen - shop name/photo/categories, from Profile)
+// ├── ShopProfile  (full screen - another seller's shop, from the map sheet)
 // └── Verification (full screen, opened from Home banner / Profile)
 
 export type ListingsStackParamList = {
@@ -54,6 +56,12 @@ export type SellerStackParamList = {
   BusinessName: undefined;
   PhoneNumber: undefined;
   ShopDetails: undefined;
+  // Another seller's shop, carried from the map - see the buyer stack's copy.
+  ShopProfile: {
+    shop: NearbyShop;
+    products: NearbyProduct[];
+    openProducts?: boolean;
+  };
   Verification: undefined;
 };
 

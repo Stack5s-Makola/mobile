@@ -2,7 +2,6 @@ import {
   Bookmark,
   Camera,
   ChevronRight,
-  ContactRound,
   LockKeyhole,
   LogOut,
   Phone,
@@ -11,7 +10,6 @@ import {
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -22,12 +20,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@context/AuthContext";
 import { buyerProfileService } from "@services/buyerProfileService";
+import * as buyerProfileCache from "@services/db/buyerProfileCache";
+import { useToast } from "@components/Toast";
 import { pickImage } from "@utils/pickImage";
 import { colors, fonts, radii } from "@constants/theme";
 import { BuyerTabProps } from "@navigation/buyerRoutes";
 
 export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
-  const { session, logout } = useAuth();
+  const { session, logout, updateUser } = useAuth();
+  const { showToast } = useToast();
+  const userId = session?.user.id;
+  // A picture chosen but not uploaded yet. Its presence is what reveals Save -
+  // the same pattern as the seller's profile.
+  const [pendingUri, setPendingUri] = useState<string | null>(null);
   const [name, setName] = useState(session?.user.fullName ?? "");
   const [imageUri, setImageUri] = useState<string | null>(
     session?.user.photoUri ?? null,
@@ -41,52 +46,111 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      buyerProfileService.getProfile(),
-      buyerProfileService.getPersonalDetails(),
-    ])
-      .then(([profileRes, detailsRes]) => {
+    let cancelled = false;
+
+    (async () => {
+      // Show the stored copy first, so the profile is on screen immediately
+      // and still readable with no connection.
+      if (userId) {
+        const cached = await buyerProfileCache.readProfile(userId).catch(() => null);
+        if (cached && !cancelled) {
+          setName(cached.name);
+          setImageUri(cached.picture);
+          setDetails({
+            email: cached.email,
+            phone: cached.phone,
+            location: cached.location,
+          });
+          setIsLoading(false);
+        }
+      }
+
+      try {
+        const [profileRes, detailsRes] = await Promise.all([
+          buyerProfileService.getProfile(),
+          buyerProfileService.getPersonalDetails(),
+        ]);
+        if (cancelled) return;
+
+        const picture = profileRes.success
+          ? (profileRes.data.profilePicture ??
+            profileRes.data.picture ??
+            profileRes.data.image ??
+            null)
+          : null;
         if (profileRes.success) {
           setName(profileRes.data.name ?? "");
-          setImageUri(
-            profileRes.data.profilePicture ??
-              profileRes.data.picture ??
-              profileRes.data.image ??
-              null,
-          );
+          setImageUri(picture);
         }
-        if (detailsRes.success) {
-          setDetails({
-            email: detailsRes.data.email ?? "",
-            phone: detailsRes.data.phone ?? "",
-            // personal-details doesn't return a location, so keep whatever
-            // the session already has rather than blanking the field.
-            location: detailsRes.data.location ?? session?.user.location ?? "",
-          });
+
+        const next = detailsRes.success
+          ? {
+              email: detailsRes.data.email ?? "",
+              phone: detailsRes.data.phone ?? "",
+              // personal-details doesn't return a location, so keep whatever
+              // the session already has rather than blanking the field.
+              location: detailsRes.data.location ?? session?.user.location ?? "",
+            }
+          : null;
+        if (next) setDetails(next);
+
+        // Keep it for next time there's no connection.
+        if (userId && (profileRes.success || detailsRes.success)) {
+          buyerProfileCache
+            .saveProfile(userId, {
+              name: profileRes.success ? (profileRes.data.name ?? "") : name,
+              email: next?.email ?? details.email,
+              phone: next?.phone ?? details.phone,
+              location: next?.location ?? details.location,
+              picture,
+            })
+            .catch((err) => console.warn("Couldn't cache buyer profile", err));
         }
-        setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
-  }, []);
+      } catch {
+        // Offline - the stored copy above stands.
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   async function chooseImage() {
     const uri = await pickImage({ aspect: [1, 1], askSource: true });
-    if (uri) setImageUri(uri);
+    // Staged, not uploaded: nothing leaves the device until Save is pressed.
+    if (uri) setPendingUri(uri);
   }
 
-  async function saveProfile() {
-    if (!name.trim() || !imageUri) {
-      Alert.alert("Profile incomplete", "Add your name and a profile image.");
-      return;
-    }
+  async function handleSavePhoto() {
+    if (!pendingUri) return;
     setIsSaving(true);
-    const res = await buyerProfileService.updateProfilePicture(imageUri);
-    setIsSaving(false);
-    if (res.success) {
-      // Keep the hosted URL, not the local file path - it survives a reinstall.
-      setImageUri(res.data.profilePicture ?? imageUri);
-      Alert.alert("Profile updated", "Your profile has been saved.");
-    } else Alert.alert("Could not update profile", res.message);
+    try {
+      const res = await buyerProfileService.updateProfilePicture(pendingUri);
+      if (res.success) {
+        // Keep the hosted URL, not the local file path - it survives a
+        // reinstall and matches what everything else shows.
+        const uploaded = res.data.profilePicture ?? pendingUri;
+        setImageUri(uploaded);
+        setPendingUri(null);
+        await updateUser({ photoUri: uploaded }).catch(() => {});
+        if (userId) {
+          buyerProfileCache
+            .saveProfile(userId, { name, ...details, picture: uploaded })
+            .catch(() => {});
+        }
+        showToast(res.message || "Profile photo updated", "success");
+      } else {
+        showToast(res.message, "error");
+      }
+    } catch {
+      showToast("Check your connection and try again.", "error");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
 
@@ -102,8 +166,11 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
         <View style={styles.identity}>
           <View style={styles.avatarWrap}>
             <View style={styles.avatarButton}>
-              {imageUri ? (
-                <Image source={{ uri: imageUri }} style={styles.avatar} />
+              {pendingUri || imageUri ? (
+                <Image
+                  source={{ uri: pendingUri ?? (imageUri as string) }}
+                  style={styles.avatar}
+                />
               ) : (
                 <UserRound size={36} color={GREEN} />
               )}
@@ -128,6 +195,7 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
           <ProfileRow
             icon={<UserRound size={20} color={colors.primary} />}
             title="Name"
+            value={name || session?.user.fullName}
             onPress={() => navigation.getParent()?.navigate("BuyerName")}
           />
           <ProfileRow
@@ -138,6 +206,7 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
           <ProfileRow
             icon={<Phone size={20} color={colors.primary} />}
             title="Phone Number"
+            value={details.phone}
             onPress={() => navigation.getParent()?.navigate("BuyerPhone")}
             last
           />
@@ -147,23 +216,39 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
           <Text style={styles.sectionTitle}>Saved</Text>
           <View style={styles.card}>
           <ProfileRow
-            icon={<ContactRound size={20} color={colors.primary} />}
-            title="Saved contacts"
-            onPress={() => navigation.navigate("Saved", { section: "shops" })}
-          />
-          <ProfileRow
             icon={<Bookmark size={20} color={colors.primary} />}
-            title="Saved products"
+            title="Saved shops"
             onPress={() => navigation.navigate("Saved")}
             last
           />
           </View>
         </View>
 
-        <Pressable style={styles.logoutButton} onPress={logout}>
-          <LogOut size={18} color={SOFT_BLACK} />
-          <Text style={styles.logoutLabel}>Log out</Text>
-        </Pressable>
+        {/* space-between keeps Log out on the left whether or not Save is
+            showing, and puts Save on the right when it is - the same row as
+            the seller's profile. */}
+        <View style={styles.actionsRow}>
+          <Pressable style={styles.logoutButton} onPress={logout}>
+            <LogOut size={18} color={SOFT_BLACK} />
+            <Text style={styles.logoutLabel}>Log out</Text>
+          </Pressable>
+
+          {/* Only while a photo is staged. */}
+          {pendingUri ? (
+            <Pressable
+              style={({ pressed }) => [styles.saveButton, pressed && styles.pressed]}
+              onPress={handleSavePhoto}
+              disabled={isSaving}
+              accessibilityRole="button"
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Text style={styles.saveLabel}>Save</Text>
+              )}
+            </Pressable>
+          ) : null}
+        </View>
       </ScrollView>
 
     </SafeAreaView>
@@ -173,18 +258,29 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
 function ProfileRow({
   icon,
   title,
+  value,
   onPress,
   last,
 }: {
   icon: React.ReactNode;
   title: string;
+  // What's on file, shown beside the label so the page says what it holds
+  // rather than making you open each screen to find out.
+  value?: string | null;
   onPress: () => void;
   last?: boolean;
 }) {
   return (
     <Pressable style={[styles.row, !last && styles.rowDivider]} onPress={onPress}>
       <View style={styles.rowIcon}>{icon}</View>
-      <Text style={[styles.rowTitle, styles.rowCopy]}>{title}</Text>
+      <View style={styles.rowCopy}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        {value ? (
+          <Text style={styles.rowValue} numberOfLines={1}>
+            {value}
+          </Text>
+        ) : null}
+      </View>
       <ChevronRight size={19} color={colors.textMuted} />
     </Pressable>
   );
@@ -261,20 +357,38 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.divider,
   },
   rowIcon: { width: 24, alignItems: "center", justifyContent: "center" },
-  rowCopy: { flex: 1, marginLeft: 12 },
+  rowCopy: { flex: 1, marginLeft: 12, gap: 2 },
   rowTitle: {
     fontSize: 15,
     fontFamily: fonts.bodySemiBold,
     color: colors.text,
   },
+  rowValue: {
+    fontSize: 13,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  saveButton: {
+    backgroundColor: GREEN,
+    borderRadius: radii.button,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveLabel: { fontSize: 15, fontFamily: fonts.bodyBold, color: colors.white },
   logoutButton: {
-    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     height: 52,
     paddingHorizontal: 20,
-    marginTop: 12,
   },
   logoutLabel: {
     color: SOFT_BLACK,

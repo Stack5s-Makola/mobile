@@ -27,6 +27,13 @@ type ApiProduct = {
   // The readable place name; `location` is coordinates.
   locationName?: string | null;
   distanceKm?: number | null;
+  subcategory?: string | null;
+  tags?: string[] | null;
+  stock?: string | number | null;
+  quantity?: string | number | null;
+  status?: string | null;
+  listedAt?: string | null;
+  createdAt?: string | null;
   category?:
     | {
         id?: string | null;
@@ -36,20 +43,78 @@ type ApiProduct = {
       }
     | string
     | null;
-  seller?: {
-    id?: string | null;
-    shopName?: string | null;
-    phone?: string | null;
-    verificationStatus?: string | null;
-  } | null;
-  shop?: {
-    id?: string | null;
-    shopName?: string | null;
-    phone?: string | null;
-    logo?: string | null;
-    verificationStatus?: string | null;
-  } | null;
+  seller?: ApiProductShop | null;
+  shop?: ApiProductShop | null;
+  // Some payloads hang the owner off the product rather than the shop.
+  owner?: ApiProductOwner | null;
 };
+
+// The person behind a shop. Spelled several ways across the API, so each
+// plausible key is read rather than guessed at.
+type ApiProductOwner = {
+  name?: string | null;
+  fullName?: string | null;
+  picture?: string | null;
+  profilePicture?: string | null;
+  avatar?: string | null;
+  phone?: string | null;
+  phoneNumber?: string | null;
+} | null;
+
+type ApiProductShop = {
+  id?: string | null;
+  shopName?: string | null;
+  phone?: string | null;
+  logo?: string | null;
+  verificationStatus?: string | null;
+  owner?: ApiProductOwner;
+  user?: ApiProductOwner;
+  ownerName?: string | null;
+  ownerPicture?: string | null;
+  ownerPhone?: string | null;
+} | null;
+
+function ownerOf(product: ApiProduct): {
+  name: string | null;
+  picture: string | null;
+  phone: string | null;
+} {
+  // Nested owner objects first, then the flattened spellings.
+  const nested =
+    product.seller?.owner ??
+    product.seller?.user ??
+    product.shop?.owner ??
+    product.shop?.user ??
+    product.owner ??
+    null;
+
+  const name =
+    nested?.name ??
+    nested?.fullName ??
+    product.seller?.ownerName ??
+    product.shop?.ownerName ??
+    null;
+
+  const picture =
+    nested?.picture ??
+    nested?.profilePicture ??
+    nested?.avatar ??
+    product.seller?.ownerPicture ??
+    product.shop?.ownerPicture ??
+    // The shop's own logo is the last resort - better a real image than a
+    // blank circle, and on most shops it's the same photo anyway.
+    product.shop?.logo ??
+    null;
+
+  const phone =
+    nested?.phone ??
+    nested?.phoneNumber ??
+    product.seller?.ownerPhone ??
+    product.shop?.ownerPhone ??
+    null;
+
+  return { name, picture, phone };
+}
 
 function toNumber(value: string | number | null | undefined): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -98,13 +163,27 @@ function locationLabel(
 }
 
 function toListing(product: ApiProduct): Listing {
+  const owner = ownerOf(product);
+  const rawStock = product.stock ?? product.quantity;
+  // Every image the payload carries, lead one first, duplicates dropped.
+  const images = Array.from(
+    new Set(
+      [product.image, product.imageUrl, ...(product.images ?? [])].filter(
+        (uri): uri is string => Boolean(uri)
+      )
+    )
+  );
   return {
     id: product.id,
     name: product.name,
     price: toNumber(product.price),
-    mainImage: product.image ?? product.imageUrl ?? product.images?.[0] ?? "",
+    mainImage: images[0] ?? "",
     sellerName: product.seller?.shopName ?? product.shop?.shopName ?? "",
-    sellerPhone: product.seller?.phone ?? product.shop?.phone ?? "",
+    ownerName: owner.name,
+    ownerPicture: owner.picture,
+    // Either is a way to reach them; without one, Contact Seller has nothing
+    // to dial.
+    sellerPhone: product.seller?.phone ?? product.shop?.phone ?? owner.phone ?? "",
     sellerVerified:
       product.seller?.verificationStatus === "verified" ||
       product.shop?.verificationStatus === "verified",
@@ -112,6 +191,14 @@ function toListing(product: ApiProduct): Listing {
     location: locationLabel(product.location, product.locationName),
     distanceKm: product.distanceKm ?? null,
     description: product.description ?? undefined,
+    subcategory: product.subcategory ?? null,
+    tags: product.tags ?? [],
+    // Not `raw ? ... : null` - a stock of 0 is real (sold out), not absent.
+    stock:
+      rawStock === null || rawStock === undefined ? null : toNumber(rawStock),
+    status: product.status ?? null,
+    listedAt: product.listedAt ?? product.createdAt ?? null,
+    images: images,
   };
 }
 

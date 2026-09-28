@@ -128,18 +128,36 @@ export interface SellerNotification {
   createdAt: string;
 }
 
-// GET /api/buyer/shops/nearby - the proper nearby search: it honours
-// radiusKm and returns a real distance, a place name and a product count.
+// The person behind a shop, as /shops/nearby now returns it. Their picture is
+// the one marker fallback that's always populated - only a handful of shops
+// have uploaded a logo of their own.
+export interface NearbyShopOwner {
+  name: string | null;
+  picture: string | null;
+  email: string | null;
+  phone: string | null;
+  emailVerified: boolean;
+}
+
+// GET /api/buyer/shops/nearby (and the seller mirror) - the proper nearby
+// search: it honours radiusKm and returns each shop whole, so tapping a pin
+// needs no second call. `locationName` is the place name; the coordinates come
+// back separately, since a place name can't be plotted.
 export interface NearbyShop {
   id: string;
   shopName: string | null;
   logo: string | null;
+  description: string | null;
   latitude: number;
   longitude: number;
   locationName: string | null;
   verificationStatus: string | null;
   distanceKm: number | null;
   productCount: number;
+  owner: NearbyShopOwner | null;
+  joinedAt: string | null;
+  // The shop's approved listings, as full cards.
+  products: NearbyProduct[];
 }
 
 // GET /api/sellers/nearby. Coordinates arrive as strings ("5.6000000") and
@@ -165,6 +183,17 @@ export interface NearbyProduct {
   category: string | null;
   shopName: string | null;
   distanceKm: number | null;
+  // Which shop this belongs to, when it arrived nested inside one. The
+  // standalone nearby list doesn't say.
+  shopId?: string | null;
+  // The rest of the card, as /shops/nearby now sends it. Optional because the
+  // standalone nearby-products list is still the leaner shape.
+  description?: string | null;
+  stock?: number | null;
+  // Every image, not just the one the card leads with.
+  images?: string[];
+  status?: string | null;
+  createdAt?: string | null;
 }
 
 export interface SellerDashboardData {
