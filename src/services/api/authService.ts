@@ -173,9 +173,11 @@ export function registerBuyer(
   body.append("password", payload.password);
   body.append("role", "BUYER");
   if (payload.photoUri) {
-    // Derive the type from the URI rather than always claiming JPEG - a PNG
-    // or HEIC mislabelled as image/jpeg can be rejected on upload.
-    body.append("image", toFilePart(payload.photoUri, "profile") as unknown as Blob);
+    body.append("image", {
+      uri: payload.photoUri,
+      name: "profile.jpg",
+      type: "image/jpeg",
+    } as unknown as Blob);
   }
   return formDataRequest<RegisterBuyerResult>("/api/register/buyer", body);
 }

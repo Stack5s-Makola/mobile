@@ -17,11 +17,6 @@ import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
 import * as authService from "@services/api/authService";
 
-// NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days) -
-// see README "Known issues".
-const WORDMARK =
-  "https://www.figma.com/api/mcp/asset/45f68554-0092-45a1-89ec-48881b40850f.png";
-
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
   const { showToast } = useToast();
@@ -92,7 +87,7 @@ export function SignInScreen({ navigation }: any) {
           keyboardDismissMode="on-drag"
         >
           <Image
-            source={{ uri: WORDMARK }}
+            source={require("../../assets/makola_tpbg.png")}
             style={styles.wordmark}
             resizeMode="contain"
           />
@@ -161,22 +156,21 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 16 },
   wordmark: {
-    width: 80,
-    height: 95,
+    width: 110,
+    height: 40,
     alignSelf: "center",
-    marginBottom: 16,
-    transform: [{ rotate: "13.31deg" }],
+    marginBottom: 80,
   },
   title: {
     fontSize: 28,
-    fontFamily: fonts.headline,
-    color: colors.primary,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
-    color: colors.text,
+    color: colors.textMuted,
     marginTop: 4,
     textAlign: "center",
   },

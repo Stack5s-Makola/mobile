@@ -238,11 +238,11 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 16 },
   back: { marginBottom: 24 },
-  title: { fontSize: 24, fontFamily: fonts.headline, color: colors.primary },
+  title: { fontSize: 24, fontFamily: fonts.bodyRegular, color: colors.text },
   subtitle: {
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
-    color: "#435c46",
+    color: colors.textMuted,
     marginTop: 4,
   },
   photoSection: { alignItems: "center", marginVertical: 20 },
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   fieldQuestion: {
     fontSize: 20,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     marginBottom: 8,
   },
   locationRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },

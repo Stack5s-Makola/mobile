@@ -197,11 +197,18 @@ const SOFT_BLACK = "#3A3A3A";
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20, paddingBottom: 128 },
-  loading: { flex: 1, justifyContent: "center", backgroundColor: colors.white },
-  identity: { alignItems: "center", gap: 4, marginTop: 12 },
-  // paddingBottom keeps the pill INSIDE the wrapper: on Android a child
-  // sticking out past its parent gets no touch events.
-  avatarWrap: { alignItems: "center", paddingBottom: 14 },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  title: {
+    textAlign: "center",
+    fontSize: 20,
+    fontFamily: fonts.headline,
+    color: colors.text,
+    marginBottom: 18,
+  },
   avatarButton: {
     width: 96,
     height: 96,
@@ -232,8 +239,9 @@ const styles = StyleSheet.create({
   name: {
     textAlign: "center",
     fontSize: 20,
-    fontFamily: fonts.headlineBold,
+    fontFamily: fonts.headline,
     color: colors.text,
+    marginTop: 12,
   },
   email: {
     textAlign: "center",
@@ -302,7 +310,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 19,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
   },
   close: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.danger },
   fieldLabel: {
