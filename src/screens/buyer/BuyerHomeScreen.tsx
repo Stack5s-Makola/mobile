@@ -16,7 +16,7 @@ import { Search, Bell, MapPin } from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
-import { colors, fonts } from "@constants/theme";
+import { colors, fonts, radii } from "@constants/theme";
 import { Listing } from "../../types/listing";
 import { listingService } from "@services/listingService";
 
@@ -293,7 +293,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  bellButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
