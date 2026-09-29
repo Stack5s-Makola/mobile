@@ -17,8 +17,6 @@ import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
 import * as authService from "@services/api/authService";
 
-
-
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
   const { showToast } = useToast();
@@ -158,22 +156,21 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 16 },
   wordmark: {
-    width: 80,
-    height: 95,
+    width: 110,
+    height: 40,
     alignSelf: "center",
-    marginBottom: 16,
-    transform: [{ rotate: "13.31deg" }],
+    marginBottom: 80,
   },
   title: {
     fontSize: 28,
-    fontFamily: fonts.headline,
-    color: colors.primary,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
-    color: colors.text,
+    color: colors.textMuted,
     marginTop: 4,
     textAlign: "center",
   },

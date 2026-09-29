@@ -68,26 +68,49 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
         </View>
       </View>
 
-      {/* Always on show, the same horizontal row as the home screen - no
-          longer hidden behind a filter toggle. */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipRow}
-        contentContainerStyle={styles.chipRowContent}
-      >
-        {CATEGORIES.map((cat) => (
-          <CategoryChip
-            key={cat.id}
-            label={cat.label}
-            icon={cat.icon}
-            active={categoryFilter === cat.id}
-            onPress={() =>
-              setCategoryFilter(categoryFilter === cat.id ? null : cat.id)
-            }
-          />
-        ))}
-      </ScrollView>
+      {showFilters ? (
+        <View style={styles.filterPanel}>
+          <Text style={styles.filterLabel}>Category</Text>
+          <View style={styles.chipRow}>
+            {CATEGORIES.map((cat) => (
+              <CategoryChip
+                key={cat.id}
+                label={cat.label}
+                icon={cat.icon}
+                active={categoryFilter === cat.id}
+                onPress={() =>
+                  setCategoryFilter(categoryFilter === cat.id ? null : cat.id)
+                }
+              />
+            ))}
+          </View>
+          <Text style={styles.filterLabel}>Price range (GHS)</Text>
+          <View style={styles.priceRow}>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="Min"
+              placeholderTextColor={colors.text}
+              keyboardType="numeric"
+              value={minPrice}
+              onChangeText={setMinPrice}
+            />
+            <Text style={styles.priceDash}>-</Text>
+            <TextInput
+              style={styles.priceInput}
+              placeholder="Max"
+              placeholderTextColor={colors.text}
+              keyboardType="numeric"
+              value={maxPrice}
+              onChangeText={setMaxPrice}
+            />
+          </View>
+          {hasActiveFilters ? (
+            <Pressable onPress={clearFilters}>
+              <Text style={styles.clearFilters}>Clear filters</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       {isLoading ? (
         <ActivityIndicator
@@ -148,8 +171,41 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyRegular,
     color: colors.text,
   },
-  chipRow: { flexGrow: 0, marginBottom: 6 },
-  chipRowContent: { paddingHorizontal: 14, gap: 4 },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radii.button,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterButtonActive: { backgroundColor: colors.primary },
+  filterPanel: { paddingHorizontal: 16, paddingBottom: 16, gap: 8 },
+  filterLabel: {
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.primary,
+    marginTop: 4,
+  },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  priceRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  priceInput: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: radii.button,
+    paddingHorizontal: 12,
+    height: 42,
+    fontFamily: fonts.bodyRegular,
+    fontSize: 13,
+    color: colors.text,
+  },
+  priceDash: { color: colors.textMuted },
+  clearFilters: {
+    fontSize: 13,
+    fontFamily: fonts.bodyMedium,
+    color: colors.danger,
+    marginTop: 4,
+  },
   loading: { marginTop: 40 },
   listContent: { padding: 14, paddingBottom: 132 },
   cell: { width: "50%" },

@@ -24,7 +24,9 @@ import { pickImage } from "@utils/pickImage";
 // images have no upload path yet (the seller profile picture goes up as a
 // multipart `image`, so this will likely follow the same shape).
 
-export function AddProductScreen({ navigation }: SellerStackProps<"AddProduct">) {
+export function AddProductScreen({
+  navigation,
+}: SellerStackProps<"AddProduct">) {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -68,7 +70,11 @@ export function AddProductScreen({ navigation }: SellerStackProps<"AddProduct">)
             accessibilityLabel="Upload product image"
           >
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.uploadPreview} resizeMode="cover" />
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.uploadPreview}
+                resizeMode="cover"
+              />
             ) : (
               <>
                 <ImageIcon size={34} color="#9AA5A1" />
@@ -76,7 +82,9 @@ export function AddProductScreen({ navigation }: SellerStackProps<"AddProduct">)
                   <Text style={styles.uploadPromptAccent}>Click to upload</Text>
                   {"  or drag and drop"}
                 </Text>
-                <Text style={styles.uploadHint}>JPG, JPEG, PNG less than 1MB</Text>
+                <Text style={styles.uploadHint}>
+                  JPG, JPEG, PNG less than 1MB
+                </Text>
               </>
             )}
           </Pressable>
@@ -259,20 +267,26 @@ function Select({
 
       {isOpen ? (
         <View style={styles.options}>
-          {CATEGORIES.map((option) => (
-            <Pressable
-              key={option.id}
-              style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
-              onPress={() => {
-                onSelect(option.id);
-                setIsOpen(false);
-              }}
-              accessibilityRole="button"
-            >
-              <Text style={styles.optionIcon}>{option.icon}</Text>
-              <Text style={styles.optionLabel}>{option.label}</Text>
-            </Pressable>
-          ))}
+          {CATEGORIES.map((option) => {
+            const CategoryIcon = option.icon;
+            return (
+              <Pressable
+                key={option.id}
+                style={({ pressed }) => [
+                  styles.option,
+                  pressed && styles.optionPressed,
+                ]}
+                onPress={() => {
+                  onSelect(option.id);
+                  setIsOpen(false);
+                }}
+                accessibilityRole="button"
+              >
+                <CategoryIcon size={18} color={colors.primary} />
+                <Text style={styles.optionLabel}>{option.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
     </View>
@@ -297,7 +311,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
-  headerTitle: { fontSize: 22, fontFamily: fonts.headlineBold, color: colors.text },
+  headerTitle: {
+    fontSize: 22,
+    fontFamily: fonts.headlineBold,
+    color: colors.text,
+  },
   headerSpacer: { width: 26 },
   content: { padding: 20, paddingBottom: 40, gap: 18 },
 
@@ -315,9 +333,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   uploadPreview: { width: "100%", height: "100%" },
-  uploadPrompt: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.text },
+  uploadPrompt: {
+    fontSize: 14,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+  },
   uploadPromptAccent: { fontFamily: fonts.bodySemiBold, color: GREEN },
-  uploadHint: { fontSize: 12, fontFamily: fonts.bodyRegular, color: PLACEHOLDER },
+  uploadHint: {
+    fontSize: 12,
+    fontFamily: fonts.bodyRegular,
+    color: PLACEHOLDER,
+  },
 
   input: {
     flexDirection: "row",
@@ -349,7 +375,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  tagLabel: { fontSize: 13, fontFamily: fonts.bodySemiBold, color: colors.white },
+  tagLabel: {
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.white,
+  },
   tagInput: {
     flexGrow: 1,
     minWidth: 120,
@@ -358,8 +388,16 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingVertical: 4,
   },
-  selectValue: { fontSize: 15, fontFamily: fonts.bodyMedium, color: colors.text },
-  selectPlaceholder: { fontSize: 15, fontFamily: fonts.bodyRegular, color: PLACEHOLDER },
+  selectValue: {
+    fontSize: 15,
+    fontFamily: fonts.bodyMedium,
+    color: colors.text,
+  },
+  selectPlaceholder: {
+    fontSize: 15,
+    fontFamily: fonts.bodyRegular,
+    color: PLACEHOLDER,
+  },
 
   options: {
     marginTop: 6,
@@ -368,10 +406,20 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     overflow: "hidden",
   },
-  option: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
   optionPressed: { backgroundColor: colors.background },
   optionIcon: { fontSize: 16 },
-  optionLabel: { fontSize: 15, fontFamily: fonts.bodyRegular, color: colors.text },
+  optionLabel: {
+    fontSize: 15,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+  },
 
   // PrimaryButton draws a 3px border in the theme's dark green; overriding
   // only the fill left a dark ring around the lighter green.

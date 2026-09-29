@@ -16,7 +16,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
-import { colors, fonts } from "@constants/theme";
+import { colors, fonts, radii } from "@constants/theme";
 import { Listing } from "../../types/listing";
 import * as buyerRepository from "@services/buyerRepository";
 import { SyncBanner, SyncStatus } from "@components/SyncBanner";
@@ -327,11 +327,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   locationValue: {
-    fontSize: 20,
-    fontFamily: fonts.headlineBold,
+    fontSize: 16,
+    fontFamily: fonts.headline,
     color: colors.text,
   },
-  bellButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  bellButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.button,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -356,7 +363,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 18,
-    fontFamily: fonts.headlineBold,
+    fontFamily: fonts.headline,
     color: colors.text,
     marginBottom: 12,
   },

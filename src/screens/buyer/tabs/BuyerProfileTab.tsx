@@ -153,7 +153,6 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
     }
   }
 
-
   if (isLoading)
     return <ActivityIndicator style={styles.loading} color={colors.primary} />;
 
@@ -176,7 +175,10 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
               )}
             </View>
             <Pressable
-              style={({ pressed }) => [styles.changePhoto, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.changePhoto,
+                pressed && styles.pressed,
+              ]}
               onPress={chooseImage}
               accessibilityRole="button"
               accessibilityLabel="Change photo"
@@ -192,35 +194,38 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Account</Text>
           <View style={styles.card}>
-          <ProfileRow
-            icon={<UserRound size={20} color={colors.primary} />}
-            title="Name"
-            value={name || session?.user.fullName}
-            onPress={() => navigation.getParent()?.navigate("BuyerName")}
-          />
-          <ProfileRow
-            icon={<LockKeyhole size={20} color={colors.primary} />}
-            title="Change password"
-            onPress={() => navigation.getParent()?.navigate("BuyerPassword")}
-          />
-          <ProfileRow
-            icon={<Phone size={20} color={colors.primary} />}
-            title="Phone Number"
-            value={details.phone}
-            onPress={() => navigation.getParent()?.navigate("BuyerPhone")}
-            last
-          />
+            <ProfileRow
+              icon={<UserRound size={20} color={colors.primary} />}
+              title="Name"
+              onPress={() => navigation.getParent()?.navigate("BuyerName")}
+            />
+            <ProfileRow
+              icon={<LockKeyhole size={20} color={colors.primary} />}
+              title="Change password"
+              onPress={() => navigation.getParent()?.navigate("BuyerPassword")}
+            />
+            <ProfileRow
+              icon={<Phone size={20} color={colors.primary} />}
+              title="Phone Number"
+              onPress={() => navigation.getParent()?.navigate("BuyerPhone")}
+              last
+            />
           </View>
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Saved</Text>
           <View style={styles.card}>
-          <ProfileRow
-            icon={<Bookmark size={20} color={colors.primary} />}
-            title="Saved shops"
-            onPress={() => navigation.navigate("Saved")}
-            last
-          />
+            <ProfileRow
+              icon={<ContactRound size={20} color={colors.primary} />}
+              title="Saved contacts"
+              onPress={() => navigation.navigate("Saved", { section: "shops" })}
+            />
+            <ProfileRow
+              icon={<Bookmark size={20} color={colors.primary} />}
+              title="Saved products"
+              onPress={() => navigation.navigate("Saved")}
+              last
+            />
           </View>
         </View>
 
@@ -250,7 +255,6 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
           ) : null}
         </View>
       </ScrollView>
-
     </SafeAreaView>
   );
 }
@@ -271,7 +275,10 @@ function ProfileRow({
   last?: boolean;
 }) {
   return (
-    <Pressable style={[styles.row, !last && styles.rowDivider]} onPress={onPress}>
+    <Pressable
+      style={[styles.row, !last && styles.rowDivider]}
+      onPress={onPress}
+    >
       <View style={styles.rowIcon}>{icon}</View>
       <View style={styles.rowCopy}>
         <Text style={styles.rowTitle}>{title}</Text>
@@ -293,11 +300,20 @@ const SOFT_BLACK = "#3A3A3A";
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20, paddingBottom: 128 },
-  loading: { flex: 1, justifyContent: "center", backgroundColor: colors.white },
-  identity: { alignItems: "center", gap: 4, marginTop: 12 },
-  // paddingBottom keeps the pill INSIDE the wrapper: on Android a child
-  // sticking out past its parent gets no touch events.
-  avatarWrap: { alignItems: "center", paddingBottom: 14 },
+  identity: { alignItems: "center" },
+  avatarWrap: { alignItems: "center" },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  title: {
+    textAlign: "center",
+    fontSize: 20,
+    fontFamily: fonts.headline,
+    color: colors.text,
+    marginBottom: 18,
+  },
   avatarButton: {
     width: 96,
     height: 96,
@@ -324,12 +340,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  changePhotoLabel: { fontSize: 12, fontFamily: fonts.bodySemiBold, color: colors.white },
+  changePhotoLabel: {
+    fontSize: 12,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.white,
+  },
   name: {
     textAlign: "center",
     fontSize: 20,
-    fontFamily: fonts.headlineBold,
+    fontFamily: fonts.headline,
     color: colors.text,
+    marginTop: 12,
   },
   email: {
     textAlign: "center",
@@ -416,7 +437,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 19,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
   },
   close: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.danger },
   fieldLabel: {

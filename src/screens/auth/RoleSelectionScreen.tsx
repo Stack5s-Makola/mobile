@@ -6,6 +6,13 @@ import { PrimaryButton } from "@components/PrimaryButton";
 import { colors, fonts } from "@constants/theme";
 import { UserRole } from "@types/user";
 
+// First step after "Get started": the role is chosen before any details
+// are typed, so the sign-up form can be framed for buyers or sellers.
+//
+// No backend call here - the role is just carried forward in nav params.
+// The account is still created in one combined submission on the
+// role-specific profile-setup screen.
+
 export function RoleSelectionScreen({ navigation }: any) {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 

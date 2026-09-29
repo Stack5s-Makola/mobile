@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     paddingHorizontal: 20,
     paddingTop: 18,
   },

@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     marginTop: 2,
   },
   price: {
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 15,
     fontFamily: fonts.headline,
-    color: colors.primary,
+    color: colors.text,
     marginBottom: 6,
   },
   description: {

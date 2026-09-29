@@ -120,7 +120,7 @@ export function RegisterScreen({ navigation, route }: any) {
         </View>
 
         <PrimaryButton
-          label="Continue"
+          label="Create Account"
           onPress={handleContinue}
           disabled={!canSubmit}
           style={styles.continueButton}
@@ -149,12 +149,16 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   header: { alignItems: "center", marginBottom: 24 },
-  wordmark: { width: 70, height: 84, marginBottom: 8 },
-  title: { fontSize: 28, fontFamily: fonts.headline, color: colors.primary },
+  wordmark: { width: 110, height: 40, marginBottom: 60 },
+  title: {
+    fontSize: 28,
+    fontFamily: fonts.bodyRegular,
+    color: colors.text,
+  },
   subtitle: {
     fontSize: 14,
     fontFamily: fonts.bodyRegular,
-    color: colors.text,
+    color: colors.textMuted,
     marginTop: 4,
     textAlign: "center",
   },
