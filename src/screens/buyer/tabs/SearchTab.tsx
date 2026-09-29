@@ -117,6 +117,7 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
             <TextInput
               style={styles.priceInput}
               placeholder="Min"
+              placeholderTextColor={colors.text}
               keyboardType="numeric"
               value={minPrice}
               onChangeText={setMinPrice}
@@ -125,6 +126,7 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
             <TextInput
               style={styles.priceInput}
               placeholder="Max"
+              placeholderTextColor={colors.text}
               keyboardType="numeric"
               value={maxPrice}
               onChangeText={setMaxPrice}
@@ -225,6 +227,7 @@ const styles = StyleSheet.create({
     height: 42,
     fontFamily: fonts.bodyRegular,
     fontSize: 13,
+    color: colors.text,
   },
   priceDash: { color: colors.textMuted },
   clearFilters: {
