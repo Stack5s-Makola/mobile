@@ -89,7 +89,6 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
     } else Alert.alert("Could not update profile", res.message);
   }
 
-
   if (isLoading)
     return <ActivityIndicator style={styles.loading} color={colors.primary} />;
 
@@ -109,7 +108,10 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
               )}
             </View>
             <Pressable
-              style={({ pressed }) => [styles.changePhoto, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.changePhoto,
+                pressed && styles.pressed,
+              ]}
               onPress={chooseImage}
               accessibilityRole="button"
               accessibilityLabel="Change photo"
@@ -125,38 +127,38 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Account</Text>
           <View style={styles.card}>
-          <ProfileRow
-            icon={<UserRound size={20} color={colors.primary} />}
-            title="Name"
-            onPress={() => navigation.getParent()?.navigate("BuyerName")}
-          />
-          <ProfileRow
-            icon={<LockKeyhole size={20} color={colors.primary} />}
-            title="Change password"
-            onPress={() => navigation.getParent()?.navigate("BuyerPassword")}
-          />
-          <ProfileRow
-            icon={<Phone size={20} color={colors.primary} />}
-            title="Phone Number"
-            onPress={() => navigation.getParent()?.navigate("BuyerPhone")}
-            last
-          />
+            <ProfileRow
+              icon={<UserRound size={20} color={colors.primary} />}
+              title="Name"
+              onPress={() => navigation.getParent()?.navigate("BuyerName")}
+            />
+            <ProfileRow
+              icon={<LockKeyhole size={20} color={colors.primary} />}
+              title="Change password"
+              onPress={() => navigation.getParent()?.navigate("BuyerPassword")}
+            />
+            <ProfileRow
+              icon={<Phone size={20} color={colors.primary} />}
+              title="Phone Number"
+              onPress={() => navigation.getParent()?.navigate("BuyerPhone")}
+              last
+            />
           </View>
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Saved</Text>
           <View style={styles.card}>
-          <ProfileRow
-            icon={<ContactRound size={20} color={colors.primary} />}
-            title="Saved contacts"
-            onPress={() => navigation.navigate("Saved", { section: "shops" })}
-          />
-          <ProfileRow
-            icon={<Bookmark size={20} color={colors.primary} />}
-            title="Saved products"
-            onPress={() => navigation.navigate("Saved")}
-            last
-          />
+            <ProfileRow
+              icon={<ContactRound size={20} color={colors.primary} />}
+              title="Saved contacts"
+              onPress={() => navigation.navigate("Saved", { section: "shops" })}
+            />
+            <ProfileRow
+              icon={<Bookmark size={20} color={colors.primary} />}
+              title="Saved products"
+              onPress={() => navigation.navigate("Saved")}
+              last
+            />
           </View>
         </View>
 
@@ -165,7 +167,6 @@ export function BuyerProfileTab({ navigation }: BuyerTabProps<"Profile">) {
           <Text style={styles.logoutLabel}>Log out</Text>
         </Pressable>
       </ScrollView>
-
     </SafeAreaView>
   );
 }
@@ -182,7 +183,10 @@ function ProfileRow({
   last?: boolean;
 }) {
   return (
-    <Pressable style={[styles.row, !last && styles.rowDivider]} onPress={onPress}>
+    <Pressable
+      style={[styles.row, !last && styles.rowDivider]}
+      onPress={onPress}
+    >
       <View style={styles.rowIcon}>{icon}</View>
       <Text style={[styles.rowTitle, styles.rowCopy]}>{title}</Text>
       <ChevronRight size={19} color={colors.textMuted} />
@@ -197,6 +201,8 @@ const SOFT_BLACK = "#3A3A3A";
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.white },
   content: { padding: 20, paddingBottom: 128 },
+  identity: { alignItems: "center" },
+  avatarWrap: { alignItems: "center" },
   loading: {
     flex: 1,
     justifyContent: "center",
@@ -235,7 +241,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  changePhotoLabel: { fontSize: 12, fontFamily: fonts.bodySemiBold, color: colors.white },
+  changePhotoLabel: {
+    fontSize: 12,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.white,
+  },
   name: {
     textAlign: "center",
     fontSize: 20,

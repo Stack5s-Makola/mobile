@@ -41,6 +41,7 @@ export function CategoriesScreen({
 
   if (selectedCategory) {
     const category = CATEGORIES.find((c) => c.id === selectedCategory);
+    const CategoryIcon = category?.icon;
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.headerRow}>
@@ -51,8 +52,8 @@ export function CategoriesScreen({
             <ArrowLeft size={22} color={colors.text} />
           </Pressable>
           <View style={styles.categoryHeaderTitle}>
-            {category ? (
-              <Text style={styles.headerIcon}>{category.icon}</Text>
+            {CategoryIcon ? (
+              <CategoryIcon size={20} color={colors.primary} />
             ) : null}
             <Text style={styles.headerTitle}>{category?.label}</Text>
           </View>
@@ -104,15 +105,18 @@ export function CategoriesScreen({
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.categoryCard}
-            onPress={() => setSelectedCategory(item.id)}
-          >
-            <Text style={styles.categoryIcon}>{item.icon}</Text>
-            <Text style={styles.categoryLabel}>{item.label}</Text>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const CategoryIcon = item.icon;
+          return (
+            <Pressable
+              style={styles.categoryCard}
+              onPress={() => setSelectedCategory(item.id)}
+            >
+              <CategoryIcon size={36} color={colors.primary} />
+              <Text style={styles.categoryLabel}>{item.label}</Text>
+            </Pressable>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -151,8 +155,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  categoryIcon: { fontSize: 36 },
-  headerIcon: { fontSize: 20 },
   categoryLabel: {
     fontSize: 13,
     fontFamily: fonts.bodySemiBold,
