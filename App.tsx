@@ -38,7 +38,7 @@ const navigationTheme: Theme = {
 
 export default function App() {
   const startupTime = useRef(Date.now());
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Sora_600SemiBold,
     Sora_700Bold,
     Manrope_400Regular,
@@ -46,9 +46,17 @@ export default function App() {
     Manrope_600SemiBold,
     Manrope_700Bold,
   });
+  const appReady = fontsLoaded || fontError !== null;
 
   useEffect(() => {
-    if (!fontsLoaded) return;
+    if (!appReady) return;
+
+    if (fontError) {
+      console.warn(
+        "Failed to load app fonts; using platform fonts instead.",
+        fontError,
+      );
+    }
 
     const remainingDuration =
       MINIMUM_SPLASH_DURATION_MS - (Date.now() - startupTime.current);
@@ -60,11 +68,18 @@ export default function App() {
     );
 
     return () => clearTimeout(timeout);
-  }, [fontsLoaded]);
+  }, [appReady, fontError]);
 
-  if (!fontsLoaded) {
+  if (!appReady) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.white,
+        }}
+      >
         <ActivityIndicator size="large" />
       </View>
     );
