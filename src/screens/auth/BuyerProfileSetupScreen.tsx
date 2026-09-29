@@ -98,6 +98,9 @@ export function BuyerProfileSetupScreen({ navigation, route }: any) {
         email,
         phone,
         password,
+        fullName: fullName.trim(),
+        name: fullName.trim(),
+        location: coordinates ?? undefined,
         photoUri,
       });
       if (res.success) {

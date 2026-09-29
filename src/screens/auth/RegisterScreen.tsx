@@ -15,12 +15,6 @@ import { colors, fonts } from "@constants/theme";
 import { useToast } from "@components/Toast";
 import { UserRole } from "@types/user";
 
-// NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days
-// from when it was pulled). Replace with a real exported asset in
-// src/assets once available - see README "Known issues" for context.
-const WORDMARK_URL =
-  "https://www.figma.com/api/mcp/asset/7c5b8b52-e295-4f19-94a8-253f0baf48d0.png";
-
 // No backend call here anymore. Per Daniel: nothing is created until the
 // final combined submission on the role-specific profile-setup screen
 // (e.g. POST /api/register/set-seller-profile), which creates the account
@@ -77,7 +71,7 @@ export function RegisterScreen({ navigation, route }: any) {
       >
         <View style={styles.header}>
           <Image
-            source={{ uri: WORDMARK_URL }}
+            source={require("../../assets/makola_tpbg.png")}
             style={styles.wordmark}
             resizeMode="contain"
           />

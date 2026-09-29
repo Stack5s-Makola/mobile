@@ -17,10 +17,7 @@ import { useToast } from "@components/Toast";
 import { useAuth } from "@context/AuthContext";
 import * as authService from "@services/api/authService";
 
-// NOTE: sourced directly from Figma's temporary asset CDN (expires ~7 days) -
-// see README "Known issues".
-const WORDMARK =
-  "https://www.figma.com/api/mcp/asset/45f68554-0092-45a1-89ec-48881b40850f.png";
+
 
 export function SignInScreen({ navigation }: any) {
   const { login } = useAuth();
@@ -92,7 +89,7 @@ export function SignInScreen({ navigation }: any) {
           keyboardDismissMode="on-drag"
         >
           <Image
-            source={{ uri: WORDMARK }}
+            source={require("../../assets/makola_tpbg.png")}
             style={styles.wordmark}
             resizeMode="contain"
           />
