@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
+  Image,
   FlatList,
   Pressable,
   StyleSheet,
@@ -10,34 +11,26 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { Phone, Trash2 } from "lucide-react-native";
-import { ProductCard } from "@components/ProductCard";
+import { Phone, Trash2, Store, ChevronRight } from "lucide-react-native";
 import { colors, fonts, radii } from "@constants/theme";
-import { Listing } from "../../../types/listing";
-import { savedService, SavedShop } from "@services/savedService";
+import * as savedRepository from "@services/savedRepository";
+import { SavedShopEntry } from "@services/savedRepository";
 import { BuyerTabProps } from "@navigation/buyerRoutes";
 
 // NOTE: built against our data model/theme - not yet verified against
 // Figma's "Saved" frame (rate-limited before it could be pulled).
 
-type Section = "products" | "shops";
-
-export function SavedTab({ navigation, route }: BuyerTabProps<"Saved">) {
-  const [section, setSection] = useState<Section>(
-    route.params?.section ?? "products",
-  );
-  const [products, setProducts] = useState<Listing[]>([]);
-  const [sellers, setSellers] = useState<SavedShop[]>([]);
+// Shops only. A shop is the container - saving one keeps everything in it - so
+// a separate list of individual products was a second way to say the same thing.
+export function SavedTab({ navigation }: BuyerTabProps<"Saved">) {
+  const [sellers, setSellers] = useState<SavedShopEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadSaved = useCallback(async () => {
     setIsLoading(true);
-    const [productsRes, shopsRes] = await Promise.all([
-      savedService.getSavedProducts(),
-      savedService.getSavedShops(),
-    ]);
-    if (shopsRes.success) setSellers(shopsRes.data);
-    if (productsRes.success) setProducts(productsRes.data);
+    // Straight off the device, so this works with no connection.
+    const savedShops = await savedRepository.getSavedShops().catch(() => []);
+    setSellers(savedShops);
     setIsLoading(false);
   }, []);
 
@@ -49,13 +42,8 @@ export function SavedTab({ navigation, route }: BuyerTabProps<"Saved">) {
     }, [loadSaved]),
   );
 
-  async function handleRemoveProduct(id: string) {
-    await savedService.toggleSavedProduct(id);
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-  }
-
-  async function handleRemoveSeller(seller: SavedShop) {
-    await savedService.toggleSavedShop(seller);
+  async function handleRemoveSeller(seller: SavedShopEntry) {
+    await savedRepository.toggleSavedShop(seller);
     setSellers((prev) =>
       prev.filter((s) => s.id !== seller.id && s.phone !== seller.phone),
     );
@@ -63,66 +51,13 @@ export function SavedTab({ navigation, route }: BuyerTabProps<"Saved">) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>Saved</Text>
-
-      <View style={styles.segmentRow}>
-        <Pressable
-          style={[
-            styles.segment,
-            section === "products" && styles.segmentActive,
-          ]}
-          onPress={() => setSection("products")}
-        >
-          <Text
-            style={[
-              styles.segmentLabel,
-              section === "products" && styles.segmentLabelActive,
-            ]}
-          >
-            Products
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.segment, section === "shops" && styles.segmentActive]}
-          onPress={() => setSection("shops")}
-        >
-          <Text
-            style={[
-              styles.segmentLabel,
-              section === "shops" && styles.segmentLabelActive,
-            ]}
-          >
-            Shops
-          </Text>
-        </Pressable>
-      </View>
+      <Text style={styles.title}>Saved Shops</Text>
 
       {isLoading ? (
         <ActivityIndicator
           size="large"
           color={colors.primary}
           style={styles.loading}
-        />
-      ) : section === "products" ? (
-        <FlatList
-          key="products-list"
-          data={products}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={styles.empty}>No saved products yet.</Text>
-          }
-          renderItem={({ item }) => (
-            <ProductCard
-              listing={item}
-              onPress={() =>
-                navigation
-                  .getParent()
-                  ?.navigate("ProductDetails", { listingId: item.id })
-              }
-            />
-          )}
         />
       ) : (
         <FlatList
@@ -131,15 +66,50 @@ export function SavedTab({ navigation, route }: BuyerTabProps<"Saved">) {
           keyExtractor={(item, index) => item.id ?? item.phone ?? String(index)}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <Text style={styles.empty}>No saved shops yet.</Text>
+            <Text style={styles.empty}>
+              No saved shops yet. Save a shop to keep it and everything in it.
+            </Text>
           }
           renderItem={({ item }) => (
-            <View style={styles.sellerRow}>
+            <Pressable
+              style={({ pressed }) => [styles.sellerRow, pressed && styles.pressed]}
+              // Only shops saved with their full details can reopen their page.
+              disabled={!item.nearby}
+              onPress={
+                item.nearby
+                  ? () =>
+                      navigation.getParent()?.navigate("ShopProfile", {
+                        shop: item.nearby,
+                        products: item.nearby?.products ?? [],
+                        openProducts: true,
+                      })
+                  : undefined
+              }
+              accessibilityRole={item.nearby ? "button" : undefined}
+            >
+              {item.image ? (
+                <Image source={{ uri: item.image }} style={styles.sellerAvatar} />
+              ) : (
+                <View style={[styles.sellerAvatar, styles.sellerAvatarFallback]}>
+                  <Store size={20} color={colors.white} />
+                </View>
+              )}
               <View style={styles.flex}>
                 <Text style={styles.sellerName}>{item.name}</Text>
-                {item.phone ? (
-                  <Text style={styles.sellerPhone}>{item.phone}</Text>
-                ) : null}
+                {/* A shop is a container - say how much is in it, so it can't
+                    be mistaken for a single product. */}
+                <Text style={styles.sellerPhone} numberOfLines={1}>
+                  {[
+                    item.nearby
+                      ? `${item.nearby.products.length} ${
+                          item.nearby.products.length === 1 ? "product" : "products"
+                        }`
+                      : null,
+                    item.nearby?.locationName ?? item.phone ?? null,
+                  ]
+                    .filter(Boolean)
+                    .join(" \u00b7 ")}
+                </Text>
               </View>
               {item.phone ? (
                 <Pressable
@@ -155,7 +125,10 @@ export function SavedTab({ navigation, route }: BuyerTabProps<"Saved">) {
               >
                 <Trash2 size={18} color={colors.danger} />
               </Pressable>
-            </View>
+              {item.nearby ? (
+                <ChevronRight size={18} color={colors.textMuted} />
+              ) : null}
+            </Pressable>
           )}
         />
       )}
@@ -172,27 +145,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 18,
   },
-  segmentRow: {
-    flexDirection: "row",
-    marginHorizontal: 20,
-    marginTop: 18,
-    backgroundColor: colors.neutralSoft,
-    borderRadius: radii.button,
-    padding: 4,
-  },
-  segment: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-    borderRadius: radii.button - 2,
-  },
-  segmentActive: { backgroundColor: colors.primary },
-  segmentLabel: {
-    fontSize: 13,
-    fontFamily: fonts.bodyMedium,
-    color: colors.textMuted,
-  },
-  segmentLabelActive: { color: colors.white },
   loading: { marginTop: 40 },
   listContent: { padding: 14, paddingBottom: 132 },
   empty: {
@@ -223,4 +175,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   iconButton: { padding: 8 },
+  sellerAvatar: { width: 44, height: 44, borderRadius: 22 },
+  sellerAvatarFallback: {
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: { opacity: 0.85 },
 });

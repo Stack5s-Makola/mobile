@@ -141,29 +141,32 @@ export function registerSeller(
   form.append("phone", payload.phone.trim());
   form.append("password", payload.password);
   form.append("name", payload.fullName.trim());
+  form.append("fullName", payload.fullName.trim());
   form.append("shopName", payload.businessName.trim());
+  form.append("businessName", payload.businessName.trim());
   form.append("role", "SELLER");
   form.append("location[latitude]", String(payload.location.latitude));
   form.append("location[longitude]", String(payload.location.longitude));
+  form.append("latitude", String(payload.location.latitude));
+  form.append("longitude", String(payload.location.longitude));
   if (payload.location.address) {
     form.append("location[address]", payload.location.address);
+    form.append("address", payload.location.address);
   }
   if (payload.photoUri) {
     form.append("image", toFilePart(payload.photoUri) as unknown as Blob);
   }
 
-  return apiRequest("/api/register/set-seller-profile", {
-    method: "POST",
-    body: form,
-  });
+  return formDataRequest<RegisterSellerResult>(
+    "/api/register/set-seller-profile",
+    form,
+  );
 }
 
 // POST /api/register/buyer - creates a buyer account and emails a code.
 // Like the seller endpoint it issues a token before the email is verified.
 //
-// The file field is `image`, the same name the seller endpoint uses. Anything
-// else is rejected outright with "Unexpected field - <name>" - which fails the
-// whole registration, not just the upload.
+// The file field is `image`, the same name the seller endpoint uses.
 export function registerBuyer(
   payload: RegisterBuyerPayload,
 ): Promise<ApiResponse<RegisterBuyerResult>> {
@@ -172,6 +175,21 @@ export function registerBuyer(
   body.append("phone", payload.phone.trim());
   body.append("password", payload.password);
   body.append("role", "BUYER");
+  const name = (payload.name ?? payload.fullName ?? "").trim();
+  if (name) {
+    body.append("name", name);
+    body.append("fullName", name);
+  }
+  if (payload.location) {
+    body.append("location[latitude]", String(payload.location.latitude));
+    body.append("location[longitude]", String(payload.location.longitude));
+    body.append("latitude", String(payload.location.latitude));
+    body.append("longitude", String(payload.location.longitude));
+    if (payload.location.address) {
+      body.append("location[address]", payload.location.address);
+      body.append("address", payload.location.address);
+    }
+  }
   if (payload.photoUri) {
     body.append("image", {
       uri: payload.photoUri,

@@ -11,14 +11,16 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Search, Bell, MapPin } from "lucide-react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
 import { colors, fonts, radii } from "@constants/theme";
 import { Listing } from "../../types/listing";
-import { listingService } from "@services/listingService";
+import * as buyerRepository from "@services/buyerRepository";
+import { SyncBanner, SyncStatus } from "@components/SyncBanner";
+import { useConnectivityChange } from "@hooks/useIsOffline";
 
 export function BuyerHomeScreen({ navigation }: any) {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -27,6 +29,7 @@ export function BuyerHomeScreen({ navigation }: any) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState("Locating...");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [coordinates, setCoordinates] = useState<{
     latitude: number;
     longitude: number;
@@ -80,23 +83,62 @@ export function BuyerHomeScreen({ navigation }: any) {
 
   const loadListings = useCallback(async (isRefresh = false) => {
     isRefresh ? setIsRefreshing(true) : setIsLoading(true);
+    // Before any await: reading the local database can be slow, and the banner
+    // must not wait on it.
+    setSyncStatus("syncing");
+
+    // Paint the stored feed first so products are on screen immediately; the
+    // network call then quietly replaces them.
+    if (!isRefresh) {
+      const cached = await buyerRepository.getCachedListings().catch(() => null);
+      if (cached && cached.length > 0) {
+        setListings(cached);
+        // Something is on screen now, so the spinner has nothing left to say.
+        setIsLoading(false);
+      }
+    }
+
     try {
-      const res = await listingService.getListings();
-      if (res.success) {
+      // No radiusKm on purpose: the point is for distances and for matching
+      // each shop's owner, not for narrowing the feed.
+      const res = await buyerRepository.getListings(
+        coordinates
+          ? { latitude: coordinates.latitude, longitude: coordinates.longitude }
+          : {}
+      );
+      if (res.data) {
         setListings(res.data);
+        // The banner says "You're offline"; no need to repeat it in the error
+        // line when the feed itself rendered fine from cache.
         setLoadError(null);
+        setSyncStatus(res.fromCache ? "offline" : "done");
       } else {
         setLoadError(res.message);
+        // The error is already on screen; don't also claim it synced.
+        setSyncStatus(res.fromCache ? "offline" : "idle");
       }
     } catch {
       setLoadError(
         "Could not load products. Check your connection and try again.",
       );
+      setSyncStatus("idle");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+    // Re-runs once the device reports a position - `coordinates` stays null
+    // when location is denied, so that case fetches only once.
+  }, [coordinates]);
+
+  // Announce the drop straight away, and on reconnect say so and refetch -
+  // whatever failed while offline is worth retrying immediately.
+  useConnectivityChange({
+    onOffline: () => setSyncStatus("offline"),
+    onOnline: () => {
+      setSyncStatus("online");
+      loadListings();
+    },
+  });
 
   const visibleListings = activeCategory
     ? listings.filter((listing) => listing.category === activeCategory)
@@ -108,7 +150,10 @@ export function BuyerHomeScreen({ navigation }: any) {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loading}>
+      // The banner belongs here too - this branch renders on a cold start,
+      // which is exactly when the sync/offline state matters most.
+      <SafeAreaView style={styles.loading} edges={["top"]}>
+        <SyncBanner status={syncStatus} syncingMessage="Updating products…" />
         <ActivityIndicator size="large" color={GREEN} />
       </SafeAreaView>
     );
@@ -116,6 +161,7 @@ export function BuyerHomeScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
+      <SyncBanner status={syncStatus} syncingMessage="Updating products…" />
       <FlatList
         data={visibleListings}
         keyExtractor={(item) => item.id}
@@ -244,7 +290,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   listContent: { padding: 14, paddingBottom: 132 },
-  cell: { width: "50%" },
   // Clears the floating tab bar, which sits about 90px up from the bottom.
   mapButton: {
     position: "absolute",
@@ -263,6 +308,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   mapButtonPressed: { opacity: 0.8 },
+  cell: { width: "50%" },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",

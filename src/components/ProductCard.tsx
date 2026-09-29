@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { ArrowUpRight, MapPin } from "lucide-react-native";
 import { Listing } from "../types/listing";
-import { colors, fonts, radii } from "@constants/theme";
+import { colors, fonts } from "@constants/theme";
 import { formatDistance } from "@utils/geo";
 
 type Props = {
@@ -23,6 +23,24 @@ export function ProductCard({ listing, onPress }: Props) {
           resizeMode="cover"
         />
       </View>
+      {/* Who is selling it, above the product's own details. */}
+      <View style={styles.ownerRow}>
+        {listing.ownerPicture ? (
+          <Image source={{ uri: listing.ownerPicture }} style={styles.ownerAvatar} />
+        ) : (
+          <View style={[styles.ownerAvatar, styles.ownerAvatarFallback]}>
+            <Text style={styles.ownerInitial}>
+              {(listing.ownerName || listing.sellerName || "?").charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <Text style={styles.ownerName} numberOfLines={1}>
+          {/* The shop's name when the payload didn't nest an owner - better
+              than an empty line where a name should be. */}
+          {listing.ownerName || listing.sellerName || "Unknown seller"}
+        </Text>
+      </View>
+
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
           {listing.name}
@@ -58,23 +76,49 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     margin: 6,
-    borderRadius: radii.card,
+    // Pinned rather than radii.card (30): that reads as a pill on a card this
+    // size, and the theme value is shared with ~19 other places.
+    borderRadius: 14,
     backgroundColor: LIGHT_GREEN,
     padding: 10,
     position: "relative",
-    minHeight: 232,
+    // Taller than before to fit the owner row without squeezing the image.
+    minHeight: 262,
   },
   pressed: { opacity: 0.9 },
   imageTile: {
     backgroundColor: colors.white,
-    borderRadius: radii.card,
+    // A touch tighter than the card's, so the two curves nest.
+    borderRadius: 10,
     aspectRatio: 1.08,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   image: { width: "100%", height: "100%" },
-  info: { marginTop: 10, paddingHorizontal: 2, paddingRight: 38 },
+
+  ownerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 2,
+  },
+  ownerAvatar: { width: 22, height: 22, borderRadius: 11 },
+  ownerAvatarFallback: {
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ownerInitial: { fontSize: 11, fontFamily: fonts.bodyBold, color: colors.white },
+  ownerName: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: fonts.bodyMedium,
+    color: colors.textMuted,
+  },
+
+  info: { marginTop: 6, paddingHorizontal: 2, paddingRight: 38 },
   name: { fontSize: 13, fontFamily: fonts.bodySemiBold, color: colors.text },
   price: {
     fontSize: 14,

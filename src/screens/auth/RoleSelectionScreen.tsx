@@ -3,7 +3,7 @@ import { View, Text, Image, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Check, Circle } from "lucide-react-native";
 import { PrimaryButton } from "@components/PrimaryButton";
-import { colors, fonts, radii } from "@constants/theme";
+import { colors, fonts } from "@constants/theme";
 import { UserRole } from "@types/user";
 
 // First step after "Get started": the role is chosen before any details
@@ -135,5 +135,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   footer: { flex: 1, justifyContent: "flex-end", paddingBottom: 16 },
-  continueButton: { borderWidth: 0 },
 });

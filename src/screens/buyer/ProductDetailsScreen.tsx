@@ -21,12 +21,28 @@ import {
   BookmarkCheck,
 } from "lucide-react-native";
 import { StatusBadge } from "@components/StatusBadge";
+import { Chip } from "@components/Chip";
+import { useToast } from "@components/Toast";
 import { colors, fonts, radii } from "@constants/theme";
 import { Listing } from "../../types/listing";
 import { getCategoryLabel } from "@constants/categories";
-import { listingService } from "@services/listingService";
-import { savedService } from "@services/savedService";
+import { formatDistance } from "@utils/geo";
+import * as buyerRepository from "@services/buyerRepository";
+import * as savedRepository from "@services/savedRepository";
 import { BuyerStackProps } from "@navigation/buyerRoutes";
+
+// A readable day, or "" when the date is missing or unparseable - the caller
+// drops empty rows.
+function formatListedDate(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 // NOTE: built against our existing data model/theme, not yet verified
 // pixel-for-pixel against Figma's "product details" frame - the Figma MCP
@@ -41,13 +57,24 @@ export function ProductDetailsScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [isProductSaved, setIsProductSaved] = useState(false);
   const [isSellerSaved, setIsSellerSaved] = useState(false);
+  const { showToast } = useToast();
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    listingService.getListingById(listingId).then((res) => {
-      if (!cancelled && res.success) setListing(res.data);
-      if (!cancelled) setIsLoading(false);
-    });
+    // Falls back to what the map saved, so a product opened from an offline
+    // shop still has a page.
+    buyerRepository
+      .getListingById(listingId)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data) setListing(res.data);
+        setIsOffline(res.fromCache);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -58,21 +85,20 @@ export function ProductDetailsScreen({
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      savedService.getSavedProducts().then((res) => {
-        if (!cancelled && res.success) {
-          setIsProductSaved(
-            res.data.some((product) => product.id === listingId),
-          );
-        }
-      });
+      // Straight off the device - no network, so nothing to fail.
+      savedRepository
+        .isProductSaved(listingId)
+        .then((saved) => {
+          if (!cancelled) setIsProductSaved(saved);
+        })
+        .catch(() => {});
       if (listing) {
-        savedService.getSavedShops().then((res) => {
-          if (!cancelled && res.success) {
-            setIsSellerSaved(
-              res.data.some((shop) => shop.phone === listing.sellerPhone),
-            );
-          }
-        });
+        savedRepository
+          .isShopSaved({ name: listing.sellerName, phone: listing.sellerPhone })
+          .then((saved) => {
+            if (!cancelled) setIsSellerSaved(saved);
+          })
+          .catch(() => {});
       }
       return () => {
         cancelled = true;
@@ -81,21 +107,74 @@ export function ProductDetailsScreen({
   );
 
   async function handleToggleSaveProduct() {
-    const res = await savedService.toggleSavedProduct(listingId);
-    if (res.success) setIsProductSaved(res.data.saved);
+    if (!listing) return;
+    try {
+      // The whole listing, not just its id: the Saved page renders from the
+      // device, so it needs the product itself stored alongside the save.
+      const { saved } = await savedRepository.toggleSavedProduct(listing);
+      setIsProductSaved(saved);
+      // Naming what was saved - there are two save controls on this page, and
+      // "Saved" alone doesn't say which tab to look in.
+      showToast(
+        saved ? "Product saved - see Saved > Products" : "Product removed from saved",
+        "success",
+      );
+    } catch {
+      // This used to fail silently: the heart didn't fill, nothing was stored,
+      // and nothing said so.
+      showToast("Couldn't save this product. Try again.", "error");
+    }
   }
 
   async function handleToggleSaveSeller() {
     if (!listing) return;
-    const res = await savedService.toggleSavedShop({
-      name: listing.sellerName,
-      phone: listing.sellerPhone,
-    });
-    if (res.success) setIsSellerSaved(res.data.saved);
+    try {
+      // The shop itself, with its products - not a stub built from this one
+      // product. A shop is the container; this product is one item in it.
+      const shop = await savedRepository.findShopByName(listing.sellerName);
+      const { saved } = await savedRepository.toggleSavedShop(
+        {
+          id: shop?.id,
+          name: shop?.shopName ?? listing.sellerName,
+          phone: shop?.owner?.phone ?? listing.sellerPhone,
+          // So the saved shop still has a face offline.
+          image: shop?.owner?.picture ?? shop?.logo ?? listing.ownerPicture ?? undefined,
+        },
+        shop,
+      );
+      setIsSellerSaved(saved);
+      showToast(
+        saved
+          ? shop
+            ? `${shop.shopName ?? "Shop"} saved - see Saved > Shops`
+            : "Shop saved - see Saved > Shops"
+          : "Shop removed from saved",
+        "success",
+      );
+    } catch {
+      showToast("Couldn't save this shop. Try again.", "error");
+    }
   }
 
-  function handleCall() {
-    if (listing) Linking.openURL(`tel:${listing.sellerPhone}`);
+  // A tel: URL has to be digits (plus an optional leading +). Passing the
+  // number as typed - "024 123 4567", "(024) 123-4567" - is what left the
+  // dialer sitting there empty.
+  const dialablePhone = (listing?.sellerPhone ?? "")
+    .trim()
+    .replace(/(?!^\+)[^\d]/g, "");
+
+  async function handleCall() {
+    if (!dialablePhone) {
+      // Nothing to dial: say so rather than opening an empty dialer.
+      showToast("This seller hasn't added a phone number yet.", "error");
+      return;
+    }
+    const url = `tel:${dialablePhone}`;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      showToast("Couldn't open the dialer on this device.", "error");
+    }
   }
 
   if (isLoading) {
@@ -113,6 +192,26 @@ export function ProductDetailsScreen({
       </SafeAreaView>
     );
   }
+
+  // Everything worth stating that isn't already above. Rows with nothing to
+  // show are dropped rather than printed as a dash.
+  const detailRows: { label: string; value: string }[] = [
+    { label: "Subcategory", value: listing.subcategory ?? "" },
+    {
+      label: "Availability",
+      value:
+        listing.stock === null || listing.stock === undefined
+          ? ""
+          : listing.stock > 0
+            ? `${listing.stock} in stock`
+            : "Sold out",
+    },
+    {
+      label: "Distance",
+      value: listing.distanceKm != null ? formatDistance(listing.distanceKm) : "",
+    },
+    { label: "Listed", value: formatListedDate(listing.listedAt) },
+  ].filter((row) => row.value.length > 0);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -146,6 +245,11 @@ export function ProductDetailsScreen({
             {getCategoryLabel(listing.category)}
           </Text>
           <Text style={styles.name}>{listing.name}</Text>
+          {isOffline ? (
+            <Text style={styles.offlineNote}>
+              Saved copy - you're offline.
+            </Text>
+          ) : null}
           <Text style={styles.price}>GHS {listing.price.toFixed(2)}</Text>
 
           <View style={styles.locationRow}>
@@ -158,13 +262,25 @@ export function ProductDetailsScreen({
           </View>
 
           <View style={styles.sellerCard}>
-            <View style={styles.sellerAvatar}>
-              <Text style={styles.sellerInitial}>
-                {listing.sellerName.charAt(0)}
-              </Text>
-            </View>
+            {listing.ownerPicture ? (
+              <Image source={{ uri: listing.ownerPicture }} style={styles.sellerAvatar} />
+            ) : (
+              // Only when there's no photo to show.
+              <View style={styles.sellerAvatar}>
+                <Text style={styles.sellerInitial}>
+                  {(listing.ownerName || listing.sellerName || "?").charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.flex}>
               <Text style={styles.sellerName}>{listing.sellerName}</Text>
+              {/* The person behind the shop, when the payload names them. */}
+              {listing.ownerName ? (
+                <Text style={styles.sellerOwner}>{listing.ownerName}</Text>
+              ) : null}
+              {dialablePhone ? (
+                <Text style={styles.sellerPhone}>{listing.sellerPhone}</Text>
+              ) : null}
               {listing.sellerVerified ? (
                 <View style={styles.verifiedRow}>
                   <ShieldCheck size={14} color={colors.primary} />
@@ -175,12 +291,19 @@ export function ProductDetailsScreen({
             <Pressable
               style={styles.saveContactButton}
               onPress={handleToggleSaveSeller}
+              // Without a shop name there is nothing to save but a blank row.
+              disabled={!listing.sellerName.trim()}
+              accessibilityRole="button"
+              accessibilityLabel={isSellerSaved ? "Remove shop from saved" : "Save shop"}
             >
               {isSellerSaved ? (
                 <BookmarkCheck size={20} color={colors.primary} />
               ) : (
                 <BookmarkPlus size={20} color={colors.primary} />
               )}
+              <Text style={styles.saveShopLabel}>
+                {isSellerSaved ? "Saved" : "Save shop"}
+              </Text>
             </Pressable>
           </View>
 
@@ -188,6 +311,35 @@ export function ProductDetailsScreen({
             <View style={styles.descriptionBlock}>
               <Text style={styles.sectionHeader}>Description</Text>
               <Text style={styles.description}>{listing.description}</Text>
+            </View>
+          ) : null}
+
+          {/* Only rendered when at least one row has something to say, so a
+              leaner payload doesn't leave an empty heading behind. */}
+          {detailRows.length > 0 ? (
+            <View style={styles.descriptionBlock}>
+              <Text style={styles.sectionHeader}>Details</Text>
+              <View style={styles.detailList}>
+                {detailRows.map((row) => (
+                  <View key={row.label} style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{row.label}</Text>
+                    <Text style={styles.detailValue} numberOfLines={2}>
+                      {row.value}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {listing.tags && listing.tags.length > 0 ? (
+            <View style={styles.descriptionBlock}>
+              <Text style={styles.sectionHeader}>Tags</Text>
+              <View style={styles.tagRow}>
+                {listing.tags.map((tag) => (
+                  <Chip key={tag} label={tag} />
+                ))}
+              </View>
             </View>
           ) : null}
         </View>
@@ -289,6 +441,40 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headline,
     color: colors.primary,
   },
+  sellerOwner: {
+    fontSize: 12,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
+  sellerPhone: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: fonts.bodyMedium,
+    color: colors.primary,
+  },
+
+  offlineNote: {
+    marginTop: 2,
+    fontSize: 12,
+    fontFamily: fonts.bodyMedium,
+    color: colors.warning,
+  },
+
+  detailList: { marginTop: 8, gap: 10 },
+  detailRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  detailLabel: {
+    width: 104,
+    fontSize: 13,
+    fontFamily: fonts.bodyRegular,
+    color: colors.textMuted,
+  },
+  detailValue: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: fonts.bodySemiBold,
+    color: colors.text,
+  },
+  tagRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   sellerName: {
     fontSize: 15,
     fontFamily: fonts.bodySemiBold,
@@ -300,7 +486,8 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
-  saveContactButton: { padding: 6 },
+  saveContactButton: { padding: 6, alignItems: "center", gap: 2 },
+  saveShopLabel: { fontSize: 10, fontFamily: fonts.bodyMedium, color: colors.primary },
   descriptionBlock: { marginTop: 20 },
   sectionHeader: {
     fontSize: 15,

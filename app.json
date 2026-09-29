@@ -2,6 +2,7 @@
   "expo": {
     "name": "Makola",
     "slug": "makola-mobile",
+    "owner": "mr-daniel",
     "version": "1.0.0",
     "icon": "./src/assets/M_logo_app_icon.png",
     "orientation": "portrait",

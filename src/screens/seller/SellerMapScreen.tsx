@@ -13,13 +13,20 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { ArrowLeft, MapPin, Store } from "lucide-react-native";
 import Mapbox, { Camera, MapView, MarkerView, UserLocation } from "@rnmapbox/maps";
 import * as Location from "expo-location";
-import { colors, fonts } from "@constants/theme";
+import { colors, fonts, radii } from "@constants/theme";
 import { useAuth } from "@context/AuthContext";
-import { ensureOfflinePack, OFFLINE_RADIUS_KM } from "@services/db/mapCache";
+import {
+  ensureOfflinePack,
+  saveNearby,
+  readNearbyShops,
+  readNearbyProducts,
+  OFFLINE_RADIUS_KM,
+} from "@services/db/mapCache";
 import { SyncBanner, SyncStatus } from "@components/SyncBanner";
 import * as nearbyService from "@services/api/nearbyService";
 import { NearbyProduct, NearbyShop } from "@types/seller";
 import { formatDistance } from "@utils/geo";
+import { labelColor } from "@utils/labelColor";
 import { SellerStackProps } from "@navigation/sellerRoutes";
 
 // Mapbox is initialised once per app load, not per render. The public token
@@ -41,8 +48,15 @@ const FALLBACK: [number, number] = [-0.187, 5.6037]; // Mapbox wants [lng, lat]
 // How far out to look for other shops and their products.
 const SEARCH_RADIUS_KM = 10;
 
+// The open state is a fixed-size card - the owner, the shop name and a button -
+// so it needs the same room on every screen.
 const SHEET_COLLAPSED = 75;
-const SHEET_EXPANDED = SHEET_COLLAPSED * 4;
+// The open sheet is measured, not guessed: the owner's name and the location
+// line are each optional, so any fixed number either leaves a gap under the
+// button or clips it. Used only for the very first frame, before onLayout.
+const SHEET_EXPANDED_ESTIMATE = 170;
+// The sheet's own paddingTop, the handle, and a matching gap under the button.
+const SHEET_CHROME = 10 + 4 + 12;
 
 function formatCoordinates([longitude, latitude]: [number, number]): string {
   return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
@@ -52,22 +66,28 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const user = session?.user;
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [selected, setSelected] = useState<NearbyShop | null>(null);
   const [shops, setShops] = useState<NearbyShop[]>([]);
   const [products, setProducts] = useState<NearbyProduct[]>([]);
   const [offlineProgress, setOfflineProgress] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<SyncStatus>("idle");
+  // Which half of the save the banner is reporting on.
+  const [syncPhase, setSyncPhase] = useState<"data" | "tiles">("data");
   const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
+  // What the open sheet's contents actually measure, via onLayout.
+  const [cardHeight, setCardHeight] = useState(0);
+  const sheetExpanded =
+    cardHeight > 0 ? cardHeight + SHEET_CHROME : SHEET_EXPANDED_ESTIMATE;
 
   useEffect(() => {
     Animated.timing(sheetHeight, {
-      toValue: isExpanded ? SHEET_EXPANDED : SHEET_COLLAPSED,
+      toValue: selected ? sheetExpanded : SHEET_COLLAPSED,
       duration: 260,
       easing: Easing.out(Easing.cubic),
       // Height can't be driven natively.
       useNativeDriver: false,
     }).start();
-  }, [isExpanded, sheetHeight]);
+  }, [selected, sheetExpanded, sheetHeight]);
   const [centre, setCentre] = useState<[number, number] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -101,52 +121,98 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
     };
   }, []);
 
+  const userId = user?.id;
+
+  // Data first, then tiles, in one effect so the banner can report both as a
+  // single save rather than two that race each other.
   useEffect(() => {
     if (!centre) return;
     let cancelled = false;
     const [longitude, latitude] = centre;
 
-    nearbyService
-      .getNearbyShops(longitude, latitude, SEARCH_RADIUS_KM)
-      .then((res) => {
-        if (!cancelled && res.success) setShops(res.data);
-      })
-      .catch(() => {});
-
-    nearbyService
-      .getNearbyProducts(longitude, latitude, SEARCH_RADIUS_KM)
-      .then((res) => {
-        if (!cancelled && res.success) setProducts(res.data);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [centre]);
-
-  const userId = user?.id;
-  useEffect(() => {
-    if (!centre || !userId) return;
-    let cancelled = false;
-
+    // Before any await, or the banner misses its first render and never shows.
+    setSyncPhase("data");
     setOfflineProgress(0);
     setDownloadStatus("syncing");
 
-    ensureOfflinePack(userId, centre, (percentage) => {
+    (async () => {
+      // Show whatever was saved last time straight away, then refresh it.
+      const [cachedShops, cachedProducts] = await Promise.all([
+        readNearbyShops().catch(() => []),
+        readNearbyProducts().catch(() => []),
+      ]);
+      if (!cancelled && cachedShops.length > 0) setShops(cachedShops);
+      if (!cancelled && cachedProducts.length > 0) setProducts(cachedProducts);
+
+      const [shopsRes, productsRes] = await Promise.all([
+        // The seller's own copy of the endpoint, behind the seller guard.
+        nearbyService
+          .getNearbyShops(longitude, latitude, SEARCH_RADIUS_KM, "seller")
+          .catch(() => null),
+        nearbyService.getNearbyProducts(longitude, latitude, SEARCH_RADIUS_KM).catch(() => null),
+      ]);
       if (cancelled) return;
-      setOfflineProgress(percentage);
-      if (percentage >= 100) setDownloadStatus("done");
-    }).then((outcome) => {
-      // Nothing was fetched, so there is no progress to report - drop the
-      // banner rather than leaving it spinning.
-      if (!cancelled && outcome !== "downloading") setDownloadStatus("idle");
-    });
+      if (shopsRes?.success) setShops(shopsRes.data);
+      if (productsRes?.success) setProducts(productsRes.data);
+
+      // Every shop and product - owners, descriptions, listings and their
+      // photos - on disk before the tiles, so the data survives even if the
+      // tile download is the thing that fails.
+      if (shopsRes?.success || productsRes?.success) {
+        await saveNearby(shopsRes?.data ?? [], productsRes?.data ?? []).catch(() => {});
+      }
+      if (cancelled) return;
+
+      // Tiles are per-account, so there's nothing to name a pack after until
+      // the session is known.
+      if (!userId) {
+        setDownloadStatus("done");
+        return;
+      }
+
+      setSyncPhase("tiles");
+      const outcome = await ensureOfflinePack(userId, centre, (percentage) => {
+        if (cancelled) return;
+        setOfflineProgress(percentage);
+        if (percentage >= 100) setDownloadStatus("done");
+      });
+      // Nothing was downloaded - already covered - but the data above was
+      // still saved, so this is a "done", not a silent dismissal.
+      if (!cancelled && outcome !== "downloading") setDownloadStatus("done");
+    })();
 
     return () => {
       cancelled = true;
     };
   }, [centre, userId]);
+
+  // Everyone else's shops; the seller's own position is already the blue dot.
+  const otherShops = shops.filter((shop) => shop.shopName !== user?.businessName);
+
+  // Markers are drawn in array order, so the last one wins where they overlap.
+  // Shops with a logo go last: test shops share coordinates, so a stack of
+  // plain icons would otherwise bury the one recognisable shop. The selected
+  // shop goes last of all so it is never hidden.
+  const orderedShops = [...otherShops].sort((a, b) => {
+    if (a.id === selected?.id) return 1;
+    if (b.id === selected?.id) return -1;
+    return (
+      Number(Boolean(a.owner?.picture ?? a.logo)) -
+      Number(Boolean(b.owner?.picture ?? b.logo))
+    );
+  });
+
+  // The selected shop's own listings when the endpoint sent them; otherwise
+  // whatever matches by name, which is all the old shape allowed.
+  const visibleProducts = selected
+    ? selected.products.length > 0
+      ? selected.products
+      : products.filter((product) => product.shopName === selected.shopName)
+    : products;
+
+  // The owner's photo first: only a handful of shops have uploaded a logo, and
+  // every owner has a picture.
+  const shopAvatar = selected?.owner?.picture ?? selected?.logo ?? null;
 
   return (
     <View style={styles.container}>
@@ -167,20 +233,47 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
             animationDuration={0}
           />
           <UserLocation visible />
-          {shops
-            .filter((shop) => shop.shopName !== user?.businessName)
-            .map((shop) => (
-              <MarkerView key={shop.id} coordinate={[shop.longitude, shop.latitude]}>
-                <View style={styles.otherMarker}>
-                  {shop.logo ? (
-                    <Image source={{ uri: shop.logo }} style={styles.markerImage} />
+          {orderedShops.map((shop) => (
+            <MarkerView key={shop.id} coordinate={[shop.longitude, shop.latitude]}>
+              {/* The whole thing is the target, so the name is tappable too. */}
+              <Pressable
+                style={({ pressed }) => [styles.markerWrap, pressed && styles.pressed]}
+                onPress={() =>
+                  setSelected((current) => (current?.id === shop.id ? null : shop))
+                }
+                accessibilityRole="button"
+                accessibilityLabel={shop.shopName ?? "Shop"}
+              >
+                <View
+                  style={[
+                    styles.otherMarker,
+                    selected?.id === shop.id && styles.markerSelected,
+                  ]}
+                >
+                  {(shop.owner?.picture ?? shop.logo) ? (
+                    <Image
+                      source={{ uri: (shop.owner?.picture ?? shop.logo) as string }}
+                      style={styles.markerImage}
+                      resizeMode="cover"
+                    />
                   ) : (
                     // No logo uploaded - a shop icon reads better than initials.
-                    <Store size={18} color={colors.white} />
+                    <Store size={24} color={colors.white} />
                   )}
                 </View>
-              </MarkerView>
-            ))}
+                {shop.shopName ? (
+                  <View style={styles.markerLabel}>
+                    <Text
+                      style={[styles.markerLabelText, { color: labelColor(shop.id) }]}
+                      numberOfLines={1}
+                    >
+                      {shop.shopName}
+                    </Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            </MarkerView>
+          ))}
 
         </MapView>
       ) : (
@@ -191,8 +284,12 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
 
       <SyncBanner
         status={downloadStatus}
-        syncingMessage={`Saving ${OFFLINE_RADIUS_KM}km offline… ${Math.round(offlineProgress)}%`}
-        doneMessage="Map saved for offline use"
+        syncingMessage={
+          syncPhase === "data"
+            ? "Saving shops nearby…"
+            : `Saving ${OFFLINE_RADIUS_KM}km offline… ${Math.round(offlineProgress)}%`
+        }
+        doneMessage="Shops and map saved for offline use"
       />
 
       {/* box-none so taps fall through to the map everywhere except the
@@ -225,25 +322,85 @@ export function SellerMapScreen({ navigation }: SellerStackProps<"Map">) {
         style={[styles.sheet, { height: Animated.add(sheetHeight, insets.bottom) }]}
       >
         <Pressable
-          onPress={() => setIsExpanded(false)}
-          disabled={!isExpanded}
+          onPress={() => setSelected(null)}
+          disabled={!selected}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Collapse details"
-          accessibilityState={{ expanded: isExpanded }}
+          accessibilityState={{ expanded: selected !== null }}
         >
           <View style={styles.sheetHandle} />
         </Pressable>
 
-        <View style={styles.sheetRow}>
-          <MapPin size={20} color={ORANGE} />
-          <Text style={styles.sheetLocation} numberOfLines={1}>
-            {/* What the seller typed at sign-up; the coordinates are the
-                fallback when they never gave one. */}
-            {user?.location || (centre ? formatCoordinates(centre) : "Location unknown")}
-          </Text>
-        </View>
+        {selected ? (
+          <View
+            onLayout={(event) => {
+              const measured = Math.round(event.nativeEvent.layout.height);
+              // Only on a real change, or setting state from layout loops.
+              setCardHeight((current) => (current === measured ? current : measured));
+            }}
+          >
+            <View style={styles.shopRow}>
+              {shopAvatar ? (
+                <Image source={{ uri: shopAvatar }} style={styles.shopAvatar} />
+              ) : (
+                <View style={[styles.shopAvatar, styles.shopAvatarFallback]}>
+                  <Store size={26} color={colors.white} />
+                </View>
+              )}
+              <View style={styles.shopBody}>
+                <Text style={styles.shopName} numberOfLines={1}>
+                  {selected.shopName ?? "Shop"}
+                </Text>
+                {selected.owner?.name ? (
+                  <Text style={styles.shopOwner} numberOfLines={1}>
+                    {selected.owner.name}
+                  </Text>
+                ) : null}
+                {selected.locationName || selected.distanceKm != null ? (
+                  <View style={styles.shopMetaRow}>
+                    <MapPin size={13} color={ORANGE} />
+                    <Text style={styles.shopMeta} numberOfLines={1}>
+                      {[
+                        selected.locationName,
+                        selected.distanceKm != null
+                          ? formatDistance(selected.distanceKm)
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
 
+            <Pressable
+              style={({ pressed }) => [styles.viewShop, pressed && styles.pressed]}
+              onPress={() =>
+                navigation.navigate("ShopProfile", {
+                  shop: selected,
+                  products: visibleProducts,
+                  // ProductDetails is a buyer route - a seller browsing a rival
+                  // shop gets the list without taps.
+                  openProducts: false,
+                })
+              }
+              accessibilityRole="button"
+            >
+              <Text style={styles.viewShopLabel}>View Shop</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.sheetRow}>
+            <MapPin size={20} color={ORANGE} />
+            <Text style={styles.sheetLocation} numberOfLines={1}>
+              {/* Where the seller is - what they typed at sign-up, with the
+                  coordinates as the fallback when they never gave one. */}
+              {user?.location || (centre ? formatCoordinates(centre) : "Location unknown")}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     </View>
   );
@@ -302,15 +459,26 @@ const styles = StyleSheet.create({
   },
   sheetRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 },
   sheetLocation: { flex: 1, fontSize: 16, fontFamily: fonts.bodySemiBold, color: colors.text },
-  sheetList: { marginTop: 10 },
-  sheetListContent: { gap: 10, paddingBottom: 8 },
-  sheetEmpty: { fontSize: 14, fontFamily: fonts.bodyRegular, color: colors.textMuted },
-  productRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  productImage: { width: 44, height: 44, borderRadius: 8 },
-  productImageFallback: { backgroundColor: colors.neutralSoft },
-  productBody: { flex: 1, gap: 2 },
-  productName: { fontSize: 14, fontFamily: fonts.bodySemiBold, color: colors.text },
-  productMeta: { fontSize: 12, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  shopRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
+  shopAvatar: { width: 60, height: 60, borderRadius: 30 },
+  shopAvatarFallback: {
+    backgroundColor: GREEN,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shopBody: { flex: 1, gap: 2 },
+  shopName: { fontSize: 17, fontFamily: fonts.headlineBold, color: colors.text },
+  shopOwner: { fontSize: 13, fontFamily: fonts.bodyMedium, color: colors.textMuted },
+  shopMetaRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  shopMeta: { flex: 1, fontSize: 12, fontFamily: fonts.bodyRegular, color: colors.textMuted },
+  viewShop: {
+    marginTop: 16,
+    borderRadius: radii.button,
+    backgroundColor: GREEN,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  viewShopLabel: { fontSize: 15, fontFamily: fonts.bodyBold, color: colors.white },
   productDistance: { fontSize: 13, fontFamily: fonts.bodySemiBold, color: GREEN },
   sheetHandle: {
     alignSelf: "center",
@@ -320,9 +488,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#D8DCDA",
   },
   otherMarker: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: GREEN,
     alignItems: "center",
     justifyContent: "center",
@@ -330,5 +498,27 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.white,
   },
-  markerImage: { width: "100%", height: "100%" },
+  // Its own radius: Android doesn't reliably clip a child image to a rounded
+  // parent via overflow: hidden.
+  markerImage: { width: "100%", height: "100%", borderRadius: 26 },
+  markerWrap: { alignItems: "center" },
+  markerLabel: {
+    // Negative, so it tucks up against the circle instead of floating below.
+    marginTop: -4,
+    maxWidth: 110,
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  markerLabelText: { fontSize: 11, fontFamily: fonts.bodySemiBold, color: colors.text },
+  // Orange ring on the shop whose details the sheet is showing.
+  markerSelected: { borderColor: ORANGE },
+
+  pressed: { opacity: 0.85 },
 });

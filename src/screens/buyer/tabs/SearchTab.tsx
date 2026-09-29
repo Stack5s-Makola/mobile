@@ -7,13 +7,10 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  Search as SearchIcon,
-  SlidersHorizontal,
-  X,
-} from "lucide-react-native";
+import { Search as SearchIcon, X } from "lucide-react-native";
 import { ProductCard } from "@components/ProductCard";
 import { CategoryChip } from "@components/CategoryChip";
 import { CATEGORIES } from "@constants/categories";
@@ -26,10 +23,7 @@ import { BuyerTabProps } from "@navigation/buyerRoutes";
 // frames pulled before the rate limit hit. Refine once that resets.
 export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
   const [query, setQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
   const [listings, setListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,25 +38,15 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
     });
   }, [query]);
 
-  const results = useMemo(() => {
-    const min = minPrice ? Number(minPrice) : null;
-    const max = maxPrice ? Number(maxPrice) : null;
-    return listings.filter((l) => {
-      const matchesCategory = !categoryFilter || l.category === categoryFilter;
-      const matchesMin = min === null || l.price >= min;
-      const matchesMax = max === null || l.price <= max;
-      return matchesCategory && matchesMin && matchesMax;
-    });
-  }, [listings, query, categoryFilter, minPrice, maxPrice]);
+  const results = useMemo(
+    () =>
+      listings.filter(
+        (listing) => !categoryFilter || listing.category === categoryFilter
+      ),
+    [listings, categoryFilter]
+  );
 
-  const hasActiveFilters =
-    categoryFilter !== null || minPrice !== "" || maxPrice !== "";
-
-  function clearFilters() {
-    setCategoryFilter(null);
-    setMinPrice("");
-    setMaxPrice("");
-  }
+  const hasActiveFilters = categoryFilter !== null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -82,18 +66,6 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
             </Pressable>
           ) : null}
         </View>
-        <Pressable
-          style={[
-            styles.filterButton,
-            hasActiveFilters && styles.filterButtonActive,
-          ]}
-          onPress={() => setShowFilters(!showFilters)}
-        >
-          <SlidersHorizontal
-            size={18}
-            color={hasActiveFilters ? colors.white : colors.primary}
-          />
-        </Pressable>
       </View>
 
       {showFilters ? (
@@ -160,14 +132,18 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
             </Text>
           }
           renderItem={({ item }) => (
-            <ProductCard
-              listing={item}
-              onPress={() =>
-                navigation
-                  .getParent()
-                  ?.navigate("ProductDetails", { listingId: item.id })
-              }
-            />
+            // Half-width cell rather than a flexing card: a lone result then
+            // stays at column width instead of stretching across the row.
+            <View style={styles.cell}>
+              <ProductCard
+                listing={item}
+                onPress={() =>
+                  navigation
+                    .getParent()
+                    ?.navigate("ProductDetails", { listingId: item.id })
+                }
+              />
+            </View>
           )}
         />
       )}
@@ -177,14 +153,8 @@ export function SearchTab({ navigation }: BuyerTabProps<"Search">) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 14,
-  },
+  searchRow: { padding: 14 },
   searchBar: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -238,6 +208,7 @@ const styles = StyleSheet.create({
   },
   loading: { marginTop: 40 },
   listContent: { padding: 14, paddingBottom: 132 },
+  cell: { width: "50%" },
   empty: {
     textAlign: "center",
     marginTop: 40,

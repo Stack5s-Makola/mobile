@@ -15,6 +15,7 @@ import { ProductDetailsScreen } from "@screens/buyer/ProductDetailsScreen";
 import { CategoriesScreen } from "@screens/buyer/CategoriesScreen";
 import { NotificationsScreen } from "@screens/buyer/NotificationsScreen";
 import { BuyerMapScreen } from "@screens/buyer/BuyerMapScreen";
+import { ShopProfileScreen } from "@screens/shared/ShopProfileScreen";
 import { BuyerNameScreen } from "@screens/buyer/profile/BuyerNameScreen";
 import { BuyerPhoneScreen } from "@screens/buyer/profile/BuyerPhoneScreen";
 import { BuyerPasswordScreen } from "@screens/buyer/profile/BuyerPasswordScreen";
@@ -57,6 +58,7 @@ export function BuyerNavigator() {
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="BuyerMap" component={BuyerMapScreen} />
+      <Stack.Screen name="ShopProfile" component={ShopProfileScreen} />
       <Stack.Screen name="BuyerName" component={BuyerNameScreen} />
       <Stack.Screen name="BuyerPhone" component={BuyerPhoneScreen} />
       <Stack.Screen name="BuyerPassword" component={BuyerPasswordScreen} />

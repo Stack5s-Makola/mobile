@@ -37,7 +37,7 @@ export function OnboardingScreen({ navigation }: any) {
       <View style={styles.textBlock}>
         <Text style={styles.title}>Discover sellers beyond your network</Text>
         <Text style={styles.subtitle}>
-          Explore products from amazing sellers across Ghana, all in one place.
+          Browse thousands of verified products from local merchants across Ghana.
         </Text>
       </View>
 

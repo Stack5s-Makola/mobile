@@ -105,11 +105,11 @@ export function SellerProfileSetupScreen({ navigation, route }: any) {
     setIsLoading(true);
     try {
       const res = await apiAuthService.registerSeller({
-        phone,
-        email,
+        phone: phone.trim(),
+        email: email.trim(),
         password,
-        fullName,
-        businessName,
+        fullName: fullName.trim(),
+        businessName: businessName.trim(),
         location: coordinates!,
         photoUri,
       });

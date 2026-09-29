@@ -127,13 +127,20 @@ export interface RegisterSellerResult extends IssuedAuth {
   saved: boolean;
 }
 
-// POST /api/register/buyer. Unlike the seller endpoint there are no profile
-// fields - a buyer's name and location have nowhere to go on the backend, so
-// they're collected for the local session only.
+export interface BuyerLocation {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  locationName?: string;
+}
+
 export interface RegisterBuyerPayload {
   email: string;
   phone: string;
   password: string;
+  fullName?: string;
+  name?: string;
+  location?: BuyerLocation;
   role?: UserRole;
   photoUri?: string;
 }

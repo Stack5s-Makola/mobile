@@ -97,3 +97,24 @@ export function changePassword(
     },
   );
 }
+
+export interface UpdateBuyerLocationPayload {
+  latitude: number;
+  longitude: number;
+  locationName?: string;
+  address?: string;
+}
+
+// POST /api/buyer/my-profile/update/location - { latitude, longitude, locationName }
+export function updateLocation(
+  payload: UpdateBuyerLocationPayload,
+): Promise<ApiResponse<{ locationName?: string | null }>> {
+  return authedApiRequest<{ locationName?: string | null }>(
+    "/api/buyer/my-profile/update/location",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
